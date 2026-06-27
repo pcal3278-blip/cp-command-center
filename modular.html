@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08111f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CP Command">
+<title>CP Command Center v6.2.2 MODULAR</title>
+<link rel="stylesheet" href="./styles.css?v=6.2.2-modular">
+<link rel="icon" href="./assets/cp-icon.svg?v=6.2.2-modular">
+<link rel="apple-touch-icon" href="./assets/cp-icon.svg?v=6.2.2-modular">
+</head>
+<body>
+<div class="app">
+<header class="top glass"><div class="brand"><div class="logo">CP</div><div><p class="eyebrow">CP Command Center</p><h1>v6.2.2 MODULAR</h1><div class="sub">Fox News added · default 4:10 AM train saved</div></div></div><button id="refresh">Refresh Data</button></header>
+<div class="statusbar"><span class="pill" id="onlinePill">Checking</span><span class="pill" id="updatedPill">Last updated: --</span><span class="pill" id="weatherPill">Weather: checking</span><span class="pill" id="newsPill">News: checking</span><span class="pill warn" id="lirrPill">LIRR: 4:10 default</span></div>
+<main>
+<section class="screen active" id="dashboard"><div class="grid"><article class="hero glass"><p class="eyebrow" id="todayLabel">Today</p><p class="metric big" id="clock">--:--</p><p class="muted" id="dateLine">--</p></article><article class="card glass"><h2 class="title"><span class="badge">🌦</span>Weather</h2><p class="metric" id="weatherMetric">Loading…</p><p id="weatherDetail" class="muted">Connecting to Open-Meteo.</p><div id="forecastBox" class="muted"></div></article><article class="card glass"><h2 class="title"><span class="badge">🚆</span>LIRR</h2><p class="metric">4:10 AM Babylon → Penn Station</p><div class="trainbox"><b>Typical train:</b><br>Babylon Station 4:10 AM → Penn Station<br><span class="muted">Default recommendation unless delays/cancellations are found.</span></div><p class="muted" id="lirrStatus">Embedded LIRR data still needs an MTA backend. Use official MTA TrainTime for live platform, track, and delay status.</p><button id="openMta">Open MTA TrainTime</button></article><article class="card glass"><h2 class="title"><span class="badge">📈</span>Markets</h2><div id="marketBox" class="muted">Loading market data…</div></article><article class="card glass"><h2 class="title"><span class="badge">⛽</span>Fuel Snapshot</h2><p class="metric" id="fuelDash">No fill-ups yet.</p><p class="muted">Tap Fuel to calculate MPG.</p></article><article class="card glass"><h2 class="title"><span class="badge">🧠</span>CP Intelligence</h2><p class="metric" id="cpInsight">Ready</p><p class="muted" id="cpInsightDetail">Fuel trends appear after several fill-ups.</p></article><article class="card glass span"><h2 class="title"><span class="badge">📰</span>News</h2><div id="newsBox" class="muted">Loading headlines…</div></article></div></section>
+<section class="screen" id="fuel"><div class="grid"><article class="card glass span"><h2 class="title"><span class="badge">⛽</span>Fuel Tracker — Calculates MPG</h2><form id="fuelForm" class="form"><select name="vehicle" id="vehicle"><option>2021 Chevy Silverado RST</option><option>2007 Honda Civic</option></select><input name="previousOdometer" id="previousOdometer" type="number" inputmode="numeric" placeholder="Previous odometer"><input name="odometer" id="odometer" type="number" inputmode="numeric" placeholder="Current odometer" required><input name="gallons" type="number" inputmode="decimal" step="0.001" placeholder="Gallons added" required><input name="price" type="number" inputmode="decimal" step="0.01" placeholder="Total price paid" required><button>Calculate + Save</button></form><p class="muted">Previous odometer auto-fills after the first saved fill-up. First use: enter it once.</p><div class="resultbox" id="resultBox"><p id="fuelResult" class="metric">No calculation yet.</p><p id="fuelExplain" class="muted">Calculates miles driven, MPG, and cost per mile.</p></div></article><article class="card glass"><h2 class="title"><span class="badge">🚗</span>Vehicle Memory</h2><div id="vehicleMemory" class="muted"></div></article><article class="card glass"><h2 class="title"><span class="badge">📋</span>Fuel History</h2><div id="fuelHistory" class="muted"></div></article></div></section>
+<section class="screen" id="diagnostics"><div class="grid"><article class="card glass span"><h2 class="title"><span class="badge">🧪</span>Diagnostics</h2><div id="diag"></div></article></div></section>
+</main></div>
+<nav class="nav glass"><button data-screen="dashboard" class="active">🏠<br>Home</button><button data-screen="fuel">⛽<br>Fuel</button><button data-screen="diagnostics">⚙️<br>CP</button><button id="refresh2">🔄<br>Refresh</button><button id="clearCache">🧹<br>Cache</button><button id="exportBtn">📤<br>Export</button></nav>
+<script src="./app.js?v=6.2.2-modular" defer></script>
+</body>
+</html>
