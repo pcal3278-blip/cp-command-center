@@ -1,1 +1,17 @@
-{"name":"CP Command Center v6.2 DATA CONNECT","short_name":"CP Center","description":"CP Command Center v6.2 with weather/news data connection testing and fuel calculations","start_url":"./?v=6.2-data","scope":"./","display":"standalone","background_color":"#07111f","theme_color":"#08111f","orientation":"portrait-primary","icons":[{"src":"./assets/cp-icon.svg?v=6.2-data","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+{
+  "name": "CP Command Center",
+  "short_name": "CP Command",
+  "description": "CP Command Center Version 5.2.1",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#08111f",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
