@@ -1,12 +1,12 @@
 {
-  "name": "CP Command Center v5.2.1",
+  "name": "CP Command Center v6.0 LIVE",
   "short_name": "CP Center",
-  "description": "CP Command Center Version 5.2.1",
-  "start_url": "./?v=5.2.1",
+  "description": "CP Command Center v6.0 LIVE dashboard",
+  "start_url": "./?v=6.0-live",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#08111f",
-  "theme_color": "#0b1020",
+  "background_color": "#07111f",
+  "theme_color": "#08111f",
   "orientation": "portrait-primary",
   "icons": []
 }
