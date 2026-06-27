@@ -7,8 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="CP Command">
     <title>CP Command Center Version 5.2.1</title>
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.webmanifest?v=5.2.1">
+    <link rel="stylesheet" href="styles.css?v=5.2.1">
   </head>
   <body>
     <div id="loading" class="loading-screen">
@@ -123,8 +123,42 @@
         </section>
 
         <section class="screen reader-screen" data-screen="reader">
-          <div class="reader-toolbar glass"><input id="readerTitle" placeholder="Reading title"><label class="file-button">Import<input id="fileImport" type="file" accept=".txt,text/plain"></label><button id="saveReading">Save</button><button id="favoriteReading">☆</button><button id="fullscreenReader">⛶</button></div>
-          <div class="reader-layout"><aside class="card glass reader-library"><h3>Library</h3><div id="libraryList"></div><h3>Recent</h3><div id="historyList"></div></aside><article class="card glass reader-main"><textarea id="readerText" class="reader-editor" placeholder="Paste text here or import a text file. Reader Mode will chunk long stories, track progress, and continue section by section."></textarea><div class="reader-status"><span id="sectionStatus">Section 0 of 0</span><span id="readingTime">Estimated reading time: 0 min</span></div><progress id="readerProgress" value="0" max="100"></progress><div class="controls"><button id="playReader">▶ Play</button><button id="pauseReader">⏸ Pause</button><button id="resumeReader">▶ Resume</button><button id="stopReader">■ Stop</button><button id="restartReader">↺ Restart</button></div><div class="settings-row"><label>Speed<select id="speechRate"><option>0.8</option><option selected>1.0</option><option>1.2</option><option>1.5</option><option>2.0</option></select></label><label>Voice<select id="voiceSelect"></select></label><label><input id="largeText" type="checkbox"> Large text</label><label><input id="darkReader" type="checkbox"> Dark reading mode</label></div></article></div>
+          <div class="reader-toolbar glass">
+            <input id="readerTitle" placeholder="Reading title">
+            <label class="file-button">Import<input id="fileImport" type="file" accept=".txt,text/plain"></label>
+            <button id="saveReading">Save</button>
+            <button id="favoriteReading">☆</button>
+            <button id="fullscreenReader">⛶</button>
+          </div>
+          <div class="reader-layout">
+            <aside class="card glass reader-library">
+              <h3>Library</h3>
+              <div id="libraryList"></div>
+              <h3>Recent</h3>
+              <div id="historyList"></div>
+            </aside>
+            <article class="card glass reader-main">
+              <textarea id="readerText" class="reader-editor" placeholder="Paste text here or import a text file. Reader Mode will chunk long stories, track progress, and continue section by section."></textarea>
+              <div class="reader-status">
+                <span id="sectionStatus">Section 0 of 0</span>
+                <span id="readingTime">Estimated reading time: 0 min</span>
+              </div>
+              <progress id="readerProgress" value="0" max="100"></progress>
+              <div class="controls">
+                <button id="playReader">▶ Play</button>
+                <button id="pauseReader">⏸ Pause</button>
+                <button id="resumeReader">▶ Resume</button>
+                <button id="stopReader">■ Stop</button>
+                <button id="restartReader">↺ Restart</button>
+              </div>
+              <div class="settings-row">
+                <label>Speed<select id="speechRate"><option>0.8</option><option selected>1.0</option><option>1.2</option><option>1.5</option><option>2.0</option></select></label>
+                <label>Voice<select id="voiceSelect"></select></label>
+                <label><input id="largeText" type="checkbox"> Large text</label>
+                <label><input id="darkReader" type="checkbox"> Dark reading mode</label>
+              </div>
+            </article>
+          </div>
         </section>
 
         <section class="screen" data-screen="mpg">
@@ -136,16 +170,62 @@
           </div>
         </section>
 
-        <section class="screen" data-screen="retirement"><div class="page-grid"><article class="card glass span-2"><h3>Retirement</h3><form id="retirementForm" class="form-grid"><input name="k401" type="number" placeholder="401(k)"><input name="b457" type="number" placeholder="457(b)"><input name="pension" type="number" placeholder="Pension estimate"><input name="contribution" type="number" placeholder="Monthly contribution"><input name="netWorth" type="number" placeholder="Net worth estimate"><button>Save Snapshot</button></form></article><article class="card glass"><h3>Countdown</h3><p id="retirementCountdown">Set a target date in Settings.</p></article><article class="card glass"><h3>Summary</h3><p id="retirementStats">No snapshots.</p></article><article class="card glass span-2"><canvas id="retirementChart" height="130"></canvas></article></div></section>
-        <section class="screen" data-screen="health"><div class="page-grid"><article class="card glass span-2"><h3>Health Dashboard</h3><form id="healthForm" class="form-grid"><input name="bp" placeholder="Blood pressure"><input name="weight" type="number" step="0.1" placeholder="Weight"><input name="sleep" type="number" step="0.1" placeholder="Sleep hours"><input name="recovery" type="number" placeholder="Recovery %"><input name="heartRate" type="number" placeholder="Heart rate"><input name="glucose" type="number" placeholder="Glucose"><input name="notes" placeholder="Daily notes"><button>Save Health Entry</button></form></article><article class="card glass"><h3>Latest</h3><p id="latestHealth">No entries.</p></article><article class="card glass span-2"><canvas id="healthChart" height="130"></canvas></article></div></section>
-        <section class="screen" data-screen="home"><div class="page-grid"><article class="card glass span-2"><h3>Home Maintenance</h3><form id="homeForm" class="form-grid"><input name="area" placeholder="Project / appliance / vehicle"><input name="task" placeholder="Maintenance task"><input name="due" type="date"><button>Save Item</button></form></article><article class="card glass"><h3>Seasonal Reminders</h3><p>HVAC service · filters · smoke detectors · gutters · vehicle checks.</p></article><article class="card glass"><h3>History</h3><div id="homeHistory"></div></article></div></section>
-        <section class="screen" data-screen="settings"><div class="page-grid"><article class="card glass"><h3>Theme</h3><select id="themeSelect"><option value="auto">Automatic</option><option value="dark">Dark Mode</option><option value="light">Light Mode</option></select></article><article class="card glass"><h3>Reader Settings</h3><label><input id="autoSaveReader" type="checkbox" checked> Auto-save current reading</label></article><article class="card glass"><h3>Units</h3><select data-store="units"><option>Imperial</option><option>Metric</option></select></article><article class="card glass"><h3>Notifications</h3><label><input data-store-check="notifications" type="checkbox"> Enable local reminder preference</label></article><article class="card glass span-2"><h3>Data Backup</h3><div class="controls"><button id="exportData">Export</button><label class="file-button">Import<input id="importData" type="file" accept="application/json"></label><button id="resetData" class="danger">Reset</button></div><textarea id="backupOutput" readonly placeholder="Exported backup appears here"></textarea></article></div></section>
-        <section class="screen" data-screen="status"><div class="page-grid"><article class="card glass span-2"><div class="card-title"><span>⚙</span><h3>Build Status</h3></div><dl class="status-list" id="statusList"></dl></article></div></section>
+        <section class="screen" data-screen="retirement">
+          <div class="page-grid">
+            <article class="card glass span-2"><h3>Retirement</h3><form id="retirementForm" class="form-grid"><input name="k401" type="number" placeholder="401(k)"><input name="b457" type="number" placeholder="457(b)"><input name="pension" type="number" placeholder="Pension estimate"><input name="contribution" type="number" placeholder="Monthly contribution"><input name="netWorth" type="number" placeholder="Net worth estimate"><button>Save Snapshot</button></form></article>
+            <article class="card glass"><h3>Countdown</h3><p id="retirementCountdown">Set a target date in Settings.</p></article>
+            <article class="card glass"><h3>Summary</h3><p id="retirementStats">No snapshots.</p></article>
+            <article class="card glass span-2"><canvas id="retirementChart" height="130"></canvas></article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="health">
+          <div class="page-grid">
+            <article class="card glass span-2"><h3>Health Dashboard</h3><form id="healthForm" class="form-grid"><input name="bp" placeholder="Blood pressure"><input name="weight" type="number" step="0.1" placeholder="Weight"><input name="sleep" type="number" step="0.1" placeholder="Sleep hours"><input name="recovery" type="number" placeholder="Recovery %"><input name="heartRate" type="number" placeholder="Heart rate"><input name="glucose" type="number" placeholder="Glucose"><input name="notes" placeholder="Daily notes"><button>Save Health Entry</button></form></article>
+            <article class="card glass"><h3>Latest</h3><p id="latestHealth">No entries.</p></article>
+            <article class="card glass span-2"><canvas id="healthChart" height="130"></canvas></article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="home">
+          <div class="page-grid">
+            <article class="card glass span-2"><h3>Home Maintenance</h3><form id="homeForm" class="form-grid"><input name="area" placeholder="Project / appliance / vehicle"><input name="task" placeholder="Maintenance task"><input name="due" type="date"><button>Save Item</button></form></article>
+            <article class="card glass"><h3>Seasonal Reminders</h3><p>HVAC service · filters · smoke detectors · gutters · vehicle checks.</p></article>
+            <article class="card glass"><h3>History</h3><div id="homeHistory"></div></article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="settings">
+          <div class="page-grid">
+            <article class="card glass"><h3>Theme</h3><select id="themeSelect"><option value="auto">Automatic</option><option value="dark">Dark Mode</option><option value="light">Light Mode</option></select></article>
+            <article class="card glass"><h3>Reader Settings</h3><label><input id="autoSaveReader" type="checkbox" checked> Auto-save current reading</label></article>
+            <article class="card glass"><h3>Units</h3><select data-store="units"><option>Imperial</option><option>Metric</option></select></article>
+            <article class="card glass"><h3>Notifications</h3><label><input data-store-check="notifications" type="checkbox"> Enable local reminder preference</label></article>
+            <article class="card glass span-2"><h3>Data Backup</h3><div class="controls"><button id="exportData">Export</button><label class="file-button">Import<input id="importData" type="file" accept="application/json"></label><button id="resetData" class="danger">Reset</button></div><textarea id="backupOutput" readonly placeholder="Exported backup appears here"></textarea></article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="status">
+          <div class="page-grid">
+            <article class="card glass span-2"><div class="card-title"><span>⚙</span><h3>Build Status</h3></div><dl class="status-list" id="statusList"></dl></article>
+          </div>
+        </section>
       </main>
 
-      <nav class="bottom-nav glass" aria-label="Primary"><button class="active" data-nav="dashboard"><span>🏠</span><b>Dashboard</b></button><button data-nav="commute"><span>🚆</span><b>Commute</b></button><button data-nav="briefing"><span>📰</span><b>Briefing</b></button><button data-nav="weather"><span>🌦</span><b>Weather</b></button><button data-nav="reader"><span>📖</span><b>Reader</b></button><button data-nav="mpg"><span>🚗</span><b>MPG</b></button><button data-nav="retirement"><span>💰</span><b>Retirement</b></button><button data-nav="health"><span>❤️</span><b>Health</b></button><button data-nav="home"><span>🏡</span><b>Home</b></button><button data-nav="settings"><span>⚙</span><b>Settings</b></button></nav>
+      <nav class="bottom-nav glass" aria-label="Primary">
+        <button class="active" data-nav="dashboard"><span>🏠</span><b>Dashboard</b></button>
+        <button data-nav="commute"><span>🚆</span><b>Commute</b></button>
+        <button data-nav="briefing"><span>📰</span><b>Briefing</b></button>
+        <button data-nav="weather"><span>🌦</span><b>Weather</b></button>
+        <button data-nav="reader"><span>📖</span><b>Reader</b></button>
+        <button data-nav="mpg"><span>🚗</span><b>MPG</b></button>
+        <button data-nav="retirement"><span>💰</span><b>Retirement</b></button>
+        <button data-nav="health"><span>❤️</span><b>Health</b></button>
+        <button data-nav="home"><span>🏡</span><b>Home</b></button>
+        <button data-nav="settings"><span>⚙</span><b>Settings</b></button>
+      </nav>
     </div>
 
-    <script src="app.js" defer></script>
+    <script src="app.js?v=5.2.1" defer></script>
   </body>
 </html>
