@@ -1,12 +1,1 @@
-{
-  "name": "CP Command Center v6.0 LIVE",
-  "short_name": "CP Center",
-  "description": "CP Command Center v6.0 LIVE dashboard",
-  "start_url": "./?v=6.0-live",
-  "scope": "./",
-  "display": "standalone",
-  "background_color": "#07111f",
-  "theme_color": "#08111f",
-  "orientation": "portrait-primary",
-  "icons": []
-}
+{"name":"CP Command Center v6.1 LIVE","short_name":"CP Center","description":"CP Command Center v6.1 LIVE polished iPhone dashboard","start_url":"./?v=6.1-live","scope":"./","display":"standalone","background_color":"#07111f","theme_color":"#08111f","orientation":"portrait-primary","icons":[{"src":"./assets/cp-icon.svg?v=6.1-live","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
