@@ -1,11 +1,11 @@
-const CACHE_NAME = "cp-command-center-v5-2-2-news-ai-commute-20260702";
+const CACHE_NAME = "cp-command-center-v5-2-3-all-babylon-routes-20260702";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=5.2.2",
-  "./app.js?v=5.2.2",
-  "./news-commute.js?v=5.2.2",
-  "./manifest.webmanifest?v=5.2.2",
+  "./styles.css?v=5.2.3",
+  "./app.js?v=5.2.3",
+  "./news-commute.js?v=5.2.3",
+  "./manifest.webmanifest?v=5.2.3",
   "./icon.svg"
 ];
 
