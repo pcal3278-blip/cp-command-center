@@ -1,11 +1,12 @@
-const CACHE_NAME = "cp-command-center-v5-2-3-all-babylon-routes-20260702";
+const CACHE_NAME = "cp-command-center-v5-3-0-neural-reader-20260702";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=5.2.3",
-  "./app.js?v=5.2.3",
-  "./news-commute.js?v=5.2.3",
-  "./manifest.webmanifest?v=5.2.3",
+  "./styles.css?v=5.3.0",
+  "./app.js?v=5.3.0",
+  "./news-commute.js?v=5.3.0",
+  "./neural-reader.js?v=5.3.0",
+  "./manifest.webmanifest?v=5.3.0",
   "./icon.svg"
 ];
 
@@ -54,8 +55,8 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // Cross-origin weather and news calls stay network-only. Never substitute
-  // index.html for JSON, RSS or API requests.
+  // Cross-origin weather, news, and neural-voice calls stay network-only.
+  // Never substitute index.html for JSON, RSS, API, or audio requests.
   if (!sameOrigin) return;
 
   event.respondWith(cacheFirstStatic(request));
@@ -66,9 +67,10 @@ async function networkFirstNavigation(request) {
     const response = await fetch(request, { cache: "no-store" });
     if (!response.ok || response.redirected) throw new Error(`Navigation failed: ${response.status}`);
 
+    const enhancedResponse = await injectNeuralReader(response);
     const cache = await caches.open(CACHE_NAME);
-    await cache.put("./index.html", response.clone());
-    return response;
+    await cache.put("./index.html", enhancedResponse.clone());
+    return enhancedResponse;
   } catch {
     const cached = await caches.match("./index.html", { ignoreSearch: true })
       || await caches.match("./", { ignoreSearch: true });
@@ -81,6 +83,27 @@ async function networkFirstNavigation(request) {
       }
     );
   }
+}
+
+async function injectNeuralReader(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("text/html")) return response;
+
+  const html = await response.text();
+  const scriptTag = '<script src="./neural-reader.js?v=5.3.0" defer></script>';
+  const enhancedHtml = html.includes("neural-reader.js")
+    ? html
+    : html.replace("</body>", `  ${scriptTag}\n  </body>`);
+
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.set("Cache-Control", "no-cache");
+
+  return new Response(enhancedHtml, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  });
 }
 
 async function cacheFirstStatic(request) {
