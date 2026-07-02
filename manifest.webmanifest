@@ -1,9 +1,12 @@
 {
+  "id": "./",
   "name": "CP Command Center",
   "short_name": "CP Command",
-  "description": "CP Command Center Version 5.2.1",
-  "start_url": "./index.html",
+  "description": "CP Command Center Version 5.2.1 · Cellular/PWA repair 2026-07-02",
+  "start_url": "./?source=pwa&repair=20260702",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#08111f",
   "theme_color": "#0b1020",
   "icons": [
