@@ -1,20 +1,22 @@
 (() => {
   "use strict";
 
-  const ENHANCEMENT_VERSION = "5.2.2";
+  const ENHANCEMENT_VERSION = "5.2.3";
   const NEWS_CACHE_KEY = "cpCommandCenter.news.v5.2.2";
   const NEWS_CACHE_TTL = 15 * 60 * 1000;
   const RSS_PROXY = "https://api.rss2json.com/v1/api.json?rss_url=";
 
-  // Every practical Penn departure requested by Paul that reaches Babylon,
-  // including transfer routes—not only trains whose final destination is Babylon.
+  // Every Penn departure Paul requested that reaches Babylon, including
+  // Montauk/Speonk trains and transfer routes—not only Babylon-destination trains.
   const AFTERNOON_TRAINS = [
     {
       depart: "2:32 PM",
       arrive: "3:35 PM",
       minutes: 63,
-      label: "Early afternoon",
+      label: "Saved early train",
       route: "Direct Penn → Babylon",
+      destination: "Babylon",
+      trainNumber: "158",
       inWindow: false
     },
     {
@@ -22,26 +24,33 @@
       arrive: "7:14 PM",
       minutes: 73,
       label: "Evening option 1",
-      route: "Transfer at Jamaica → Babylon",
+      route: "Penn → Jamaica 6:23 PM; transfer to Montauk train departing Jamaica 6:31 PM",
+      destination: "Montauk",
+      trainNumber: "22",
       inWindow: true,
-      transfer: true
+      transfer: true,
+      caution: "8-minute Jamaica connection—confirm track in TrainTime"
     },
     {
       depart: "6:07 PM",
       arrive: "7:25 PM",
       minutes: 78,
       label: "Evening option 2",
-      route: "Penn → Wantagh 6:58 PM; transfer to Babylon train about 7:03 PM",
+      route: "Penn train 1172 → Wantagh 6:58 PM; transfer to train 272 about 7:03 PM",
+      destination: "Babylon via Wantagh",
+      trainNumber: "1172 → 272",
       inWindow: true,
       transfer: true,
-      caution: "5-minute transfer—confirm in TrainTime"
+      caution: "5-minute Wantagh connection—most delay-sensitive option"
     },
     {
       depart: "6:28 PM",
       arrive: "7:30 PM",
       minutes: 62,
       label: "Evening option 3",
-      route: "Direct Penn → Babylon",
+      route: "Direct Penn → Babylon; train continues east to Speonk",
+      destination: "Speonk",
+      trainNumber: "44",
       inWindow: true
     },
     {
@@ -50,6 +59,8 @@
       minutes: 67,
       label: "First backup after 6:30",
       route: "Direct Penn → Babylon",
+      destination: "Babylon",
+      trainNumber: "176",
       inWindow: false,
       backup: true
     }
@@ -76,6 +87,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     injectStyles();
     rewriteVersionLabels();
+    rewriteCommuteDescription();
     renderAfternoonTrains();
     bindNewsControls();
     installStatusVersionObserver();
@@ -102,13 +114,14 @@
       .news-item-body{padding:0 12px 12px;color:var(--muted);line-height:1.5}
       .news-item-body a{display:inline-flex;min-height:42px;align-items:center;padding:9px 12px;border-radius:12px;background:var(--accent);color:#06111d;text-decoration:none;font-weight:800}
       .feed-error{padding:12px;color:var(--muted)}
-      .train-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:12px 0}
+      .train-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin:12px 0}
       .train-option{border:1px solid var(--line);border-radius:18px;padding:13px;background:rgba(0,0,0,.16)}
       .train-option.next-train{outline:2px solid var(--accent);background:rgba(101,214,255,.10)}
       .train-option.backup{opacity:.78}
       .train-option small,.train-option span{display:block;color:var(--muted);line-height:1.4}
       .train-option strong{display:block;font-size:1.18rem;margin:4px 0}
       .train-route{margin-top:7px;font-weight:700;color:var(--text)!important}
+      .train-destination{margin-top:6px;color:var(--text)!important}
       .train-caution{margin-top:6px;color:#ffcc66!important;font-size:.78rem}
       .news-badge{display:inline-block!important;width:max-content;margin-top:8px;padding:5px 8px;border-radius:999px;border:1px solid var(--line);font-size:.74rem}
       @media(max-width:520px){.news-toolbar>*{width:100%}.train-grid{grid-template-columns:1fr}}
@@ -126,6 +139,14 @@
     patchStatusVersion();
   }
 
+  function rewriteCommuteDescription() {
+    const container = document.querySelector("#afternoonTrainList");
+    const intro = container?.previousElementSibling;
+    if (intro) {
+      intro.textContent = "Your saved 2:32 PM train and every Penn departure from 6:00 through 6:30 PM that reaches Babylon—including Montauk, Speonk, Babylon, and transfer routes.";
+    }
+  }
+
   function installStatusVersionObserver() {
     const status = document.querySelector("#statusList");
     if (!status) return;
@@ -134,7 +155,7 @@
 
   function patchStatusVersion() {
     document.querySelectorAll("#statusList dd").forEach(dd => {
-      const next = dd.textContent.replaceAll("5.2.1", ENHANCEMENT_VERSION);
+      const next = dd.textContent.replaceAll("5.2.1", ENHANCEMENT_VERSION).replaceAll("5.2.2", ENHANCEMENT_VERSION);
       if (next !== dd.textContent) dd.textContent = next;
     });
   }
@@ -154,21 +175,22 @@
             <small>${escapeHtml(train.label)}</small>
             <strong>${escapeHtml(train.depart)}</strong>
             <span>Arrives Babylon ${escapeHtml(train.arrive)} · ${train.minutes} min</span>
+            <span class="train-destination">Destination: ${escapeHtml(train.destination)} · Train ${escapeHtml(train.trainNumber)}</span>
             <span class="train-route">${escapeHtml(train.route)}</span>
             ${train.inWindow ? '<span class="news-badge">6:00–6:30 departure</span>' : ""}
-            ${train.transfer ? '<span class="news-badge">Transfer route</span>' : '<span class="news-badge">Direct</span>'}
+            ${train.transfer ? '<span class="news-badge">Transfer route</span>' : '<span class="news-badge">Single-seat ride</span>'}
             ${train.caution ? `<span class="train-caution">${escapeHtml(train.caution)}</span>` : ""}
           </div>
         `).join("")}
       </div>
       <p class="source-note">
-        This list includes every Penn departure in your requested 6:00–6:30 PM window that can get you to Babylon: 6:01 via Jamaica, 6:07 via Wantagh, and 6:28 direct. The 6:31 direct is shown as the first backup after the window. Official weekday timetable effective May 11–September 7, 2026, except holidays. Transfer connections are more vulnerable to delays, so verify the trip in TrainTime before leaving work.
+        All Penn departures in your requested 6:00–6:30 PM window that reach Babylon are included: 6:01 via Jamaica to Montauk train 22, 6:07 via Wantagh using trains 1172 and 272, and 6:28 on Speonk train 44. The 6:31 Babylon train 176 is shown as the first backup after the window. Official weekday timetable effective May 11–September 7, 2026, except holidays. Always confirm tracks and transfer protection in TrainTime.
       </p>
     `;
 
     const dashboardDetail = document.querySelector("#dashboardCommuteDetail");
     if (dashboardDetail) {
-      dashboardDetail.textContent = "AM 4:10 Babylon → Penn · PM 2:32 direct · 6:01 via Jamaica · 6:07 via Wantagh · 6:28 direct.";
+      dashboardDetail.textContent = "2:32 Babylon · 6:01 Montauk via Jamaica · 6:07 via Wantagh · 6:28 Speonk · 6:31 Babylon backup.";
     }
   }
 
