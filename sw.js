@@ -1,10 +1,11 @@
-const CACHE_NAME = "cp-command-center-v5-2-1-cellular-repair-20260702";
+const CACHE_NAME = "cp-command-center-v5-2-2-news-ai-commute-20260702";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=5.2.1",
-  "./app.js?v=5.2.1",
-  "./manifest.webmanifest?v=5.2.1",
+  "./styles.css?v=5.2.2",
+  "./app.js?v=5.2.2",
+  "./news-commute.js?v=5.2.2",
+  "./manifest.webmanifest?v=5.2.2",
   "./icon.svg"
 ];
 
@@ -53,8 +54,8 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // Cross-origin weather/news/API calls must stay network-only. Never return
-  // index.html for them because that produces invalid JSON and can destabilize startup.
+  // Cross-origin weather and news calls stay network-only. Never substitute
+  // index.html for JSON, RSS or API requests.
   if (!sameOrigin) return;
 
   event.respondWith(cacheFirstStatic(request));
