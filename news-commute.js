@@ -146,7 +146,8 @@
     const status = document.querySelector("#statusList");
     if (!status) return;
     status.querySelectorAll("dd").forEach(dd => {
-      dd.textContent = dd.textContent.replaceAll("5.2.1", ENHANCEMENT_VERSION);
+      const next = dd.textContent.replaceAll("5.2.1", ENHANCEMENT_VERSION);
+      if (next !== dd.textContent) dd.textContent = next;
     });
   }
 
