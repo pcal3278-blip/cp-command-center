@@ -1,23 +1,23 @@
 (() => {
   "use strict";
 
-  const BUILD = "5.3.0";
+  const BUILD = "5.3.1";
   const ENDPOINT_KEY = "cpCommandCenter.neuralVoiceEndpoint";
   const SETTINGS_KEY = "cpCommandCenter.neuralVoiceSettings";
   const DEFAULT_ENDPOINT = "/api/tts";
-  const MAX_CHUNK_CHARS = 2800;
+  const MAX_CHUNK_CHARS = 2400;
 
   const PRESETS = {
     bella: {
       label: "Bella Calm",
       voice: "marin",
-      speed: 0.96,
+      speed: 0.95,
       description: "Warm, calm and natural with gentle emotion and deliberate pauses."
     },
     news: {
       label: "News Anchor",
       voice: "marin",
-      speed: 1.02,
+      speed: 1.0,
       description: "Clear professional delivery with confident pacing and restrained emotion."
     },
     bedtime: {
@@ -37,8 +37,7 @@
   let chunks = [];
   let audioUrls = [];
   let currentIndex = 0;
-  let generating = false;
-  let stopped = false;
+  let stopped = true;
   let prefetchPromise = null;
   let activeAudio = null;
 
@@ -67,7 +66,7 @@
         </div>
         <span class="neural-badge">Build ${BUILD}</span>
       </div>
-      <p id="neuralVoiceStatus" class="neural-status">Ready. Neural audio is generated securely when the voice service is connected.</p>
+      <p id="neuralVoiceStatus" class="neural-status">Checking the secure voice connection…</p>
       <div class="neural-settings">
         <label>Style
           <select id="neuralPreset">
@@ -87,8 +86,10 @@
         <label>Speed
           <select id="neuralSpeed">
             <option value="0.85">0.85×</option>
+            <option value="0.88">0.88×</option>
             <option value="0.9">0.90×</option>
             <option value="0.95">0.95×</option>
+            <option value="0.98">0.98×</option>
             <option value="1">1.00×</option>
             <option value="1.05">1.05×</option>
             <option value="1.1">1.10×</option>
@@ -96,11 +97,11 @@
         </label>
       </div>
       <div class="neural-controls">
-        <button id="neuralPlay">🎙 Generate & Play</button>
-        <button id="neuralPause">⏸ Pause</button>
-        <button id="neuralResume">▶ Resume</button>
-        <button id="neuralStop">■ Stop</button>
-        <button id="neuralRestart">↺ Restart</button>
+        <button id="neuralPlay" type="button">🎙 Generate & Play</button>
+        <button id="neuralPause" type="button">⏸ Pause</button>
+        <button id="neuralResume" type="button">▶ Resume</button>
+        <button id="neuralStop" type="button">■ Stop</button>
+        <button id="neuralRestart" type="button">↺ Restart</button>
       </div>
       <progress id="neuralProgress" max="100" value="0"></progress>
       <p id="neuralSection" class="neural-section">Section 0 of 0</p>
@@ -108,35 +109,39 @@
       <details class="neural-advanced">
         <summary>Secure voice connection</summary>
         <label>Voice service URL
-          <input id="neuralEndpoint" type="url" inputmode="url" placeholder="https://your-secure-site.netlify.app/api/tts">
+          <input id="neuralEndpoint" type="text" inputmode="url" value="${escapeAttribute(settings.endpoint)}">
         </label>
-        <p>The OpenAI key is never stored in this app. It stays in the secure server environment.</p>
+        <div class="neural-connection-actions">
+          <button id="neuralTest" type="button">Test connection</button>
+          <button id="neuralResetEndpoint" type="button">Use this site</button>
+        </div>
+        <p>The OpenAI key is never stored in this browser or repository. It stays in the secure Cloudflare environment.</p>
       </details>
     `;
 
     readerMain.insertBefore(panel, readerText);
 
-    const audio = document.querySelector("#neuralAudio");
-    activeAudio = audio;
+    activeAudio = document.querySelector("#neuralAudio");
     document.querySelector("#neuralPreset").value = settings.preset;
     document.querySelector("#neuralVoice").value = settings.voice;
-    document.querySelector("#neuralSpeed").value = String(settings.speed);
-    document.querySelector("#neuralEndpoint").value = settings.endpoint;
+    document.querySelector("#neuralSpeed").value = nearestSpeed(settings.speed);
 
     document.querySelector("#neuralPreset").addEventListener("change", applyPreset);
     document.querySelector("#neuralVoice").addEventListener("change", saveControls);
     document.querySelector("#neuralSpeed").addEventListener("change", saveControls);
     document.querySelector("#neuralEndpoint").addEventListener("change", saveControls);
     document.querySelector("#neuralPlay").addEventListener("click", startNeuralPlayback);
-    document.querySelector("#neuralPause").addEventListener("click", () => audio.pause());
-    document.querySelector("#neuralResume").addEventListener("click", () => audio.play().catch(showPlaybackError));
-    document.querySelector("#neuralStop").addEventListener("click", stopNeuralPlayback);
+    document.querySelector("#neuralPause").addEventListener("click", () => activeAudio.pause());
+    document.querySelector("#neuralResume").addEventListener("click", resumePlayback);
+    document.querySelector("#neuralStop").addEventListener("click", () => stopNeuralPlayback(true));
     document.querySelector("#neuralRestart").addEventListener("click", restartNeuralPlayback);
-    audio.addEventListener("ended", playNextChunk);
-    audio.addEventListener("error", () => setStatus("Audio playback failed. The iPhone Reader remains available below."));
+    document.querySelector("#neuralTest").addEventListener("click", checkConnection);
+    document.querySelector("#neuralResetEndpoint").addEventListener("click", useSameOriginEndpoint);
+    activeAudio.addEventListener("ended", playNextChunk);
+    activeAudio.addEventListener("error", () => setStatus("Audio playback failed. Tap the audio control once, or use the regular iPhone Reader below."));
 
     applyPreset(false);
-    setConnectionStatus();
+    checkConnection();
   }
 
   function injectStyles() {
@@ -149,7 +154,7 @@
       .neural-status,.neural-section,.neural-advanced p{color:var(--muted);line-height:1.45}
       .neural-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}
       .neural-settings label,.neural-advanced label{display:grid;gap:6px;font-size:.84rem;color:var(--muted)}
-      .neural-controls{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+      .neural-controls,.neural-connection-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
       .neural-controls button{flex:1 1 130px}
       #neuralAudio{width:100%;margin-top:8px}
       #neuralProgress{width:100%}
@@ -164,15 +169,31 @@
   function loadSettings() {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"); } catch {}
-    const endpoint = localStorage.getItem(ENDPOINT_KEY)
-      || saved.endpoint
-      || (location.hostname.endsWith("netlify.app") ? DEFAULT_ENDPOINT : "");
+    const storedEndpoint = localStorage.getItem(ENDPOINT_KEY) || saved.endpoint || "";
+    const endpoint = normalizeEndpoint(storedEndpoint) || DEFAULT_ENDPOINT;
     return {
       preset: saved.preset && PRESETS[saved.preset] ? saved.preset : "bella",
       voice: saved.voice || "marin",
-      speed: Number(saved.speed || 0.96),
+      speed: Number(saved.speed || 0.95),
       endpoint
     };
+  }
+
+  function normalizeEndpoint(value) {
+    const endpoint = String(value || "").trim();
+    if (!endpoint) return "";
+    if (endpoint === DEFAULT_ENDPOINT) return DEFAULT_ENDPOINT;
+    try {
+      const parsed = new URL(endpoint, location.origin);
+      if (!/^https?:$/.test(parsed.protocol)) return "";
+      return parsed.origin === location.origin ? `${parsed.pathname}${parsed.search}` : parsed.href;
+    } catch {
+      return "";
+    }
+  }
+
+  function getEndpoint() {
+    return normalizeEndpoint(document.querySelector("#neuralEndpoint")?.value) || DEFAULT_ENDPOINT;
   }
 
   function saveControls() {
@@ -180,12 +201,17 @@
       preset: document.querySelector("#neuralPreset").value,
       voice: document.querySelector("#neuralVoice").value,
       speed: Number(document.querySelector("#neuralSpeed").value),
-      endpoint: document.querySelector("#neuralEndpoint").value.trim()
+      endpoint: getEndpoint()
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    if (settings.endpoint) localStorage.setItem(ENDPOINT_KEY, settings.endpoint);
-    else localStorage.removeItem(ENDPOINT_KEY);
-    setConnectionStatus();
+    localStorage.setItem(ENDPOINT_KEY, settings.endpoint);
+    document.querySelector("#neuralEndpoint").value = settings.endpoint;
+  }
+
+  function useSameOriginEndpoint() {
+    document.querySelector("#neuralEndpoint").value = DEFAULT_ENDPOINT;
+    saveControls();
+    checkConnection();
   }
 
   function applyPreset(save = true) {
@@ -198,53 +224,53 @@
   }
 
   function nearestSpeed(speed) {
-    const values = [0.85, 0.9, 0.95, 1, 1.05, 1.1];
+    const values = [0.85, 0.88, 0.9, 0.95, 0.98, 1, 1.05, 1.1];
     return String(values.reduce((best, value) => Math.abs(value - speed) < Math.abs(best - speed) ? value : best));
   }
 
-  function getEndpoint() {
-    return document.querySelector("#neuralEndpoint")?.value.trim()
-      || (location.hostname.endsWith("netlify.app") ? DEFAULT_ENDPOINT : "");
-  }
-
-  function setConnectionStatus() {
-    if (getEndpoint()) {
-      setStatus("Neural voice is configured. Press Generate & Play to create human-sounding audio.");
-    } else {
-      setStatus("Neural voice code is installed, but the secure voice server still needs to be connected. The regular iPhone Reader remains available.");
+  async function checkConnection() {
+    saveControls();
+    setStatus("Checking the secure voice connection…");
+    try {
+      const response = await fetch(getEndpoint(), { method: "GET", cache: "no-store" });
+      let body = {};
+      try { body = await response.json(); } catch {}
+      if (response.ok && body.configured) {
+        setStatus("Neural voice is connected. Add a reading and press Generate & Play.");
+      } else if (body && body.configured === false) {
+        setStatus("The Cloudflare voice function is installed, but OPENAI_API_KEY still needs to be added as a secure environment variable.");
+      } else {
+        setStatus(body.error || `Voice connection returned ${response.status}.`);
+      }
+    } catch (error) {
+      setStatus(humanizeError(error));
     }
   }
 
   async function startNeuralPlayback() {
     const text = document.querySelector("#readerText")?.value.trim();
-    const endpoint = getEndpoint();
     if (!text) return setStatus("Add or load a reading first.");
-    if (!endpoint) return setStatus("Secure voice server not connected yet. Open Secure voice connection after the server is deployed.");
 
-    stopNeuralPlayback();
+    stopNeuralPlayback(false);
     stopped = false;
     chunks = chunkText(text, MAX_CHUNK_CHARS);
     audioUrls = new Array(chunks.length).fill(null);
     currentIndex = 0;
     updateProgress();
-    generating = true;
     setStatus(`Preparing section 1 of ${chunks.length}…`);
 
     try {
       audioUrls[0] = await generateChunk(chunks[0]);
-      generating = false;
       if (stopped) return;
       prefetchPromise = prefetchChunk(1);
       await playCurrentChunk();
     } catch (error) {
-      generating = false;
       setStatus(humanizeError(error));
     }
   }
 
   async function generateChunk(input) {
-    const endpoint = getEndpoint();
-    const response = await fetch(endpoint, {
+    const response = await fetch(getEndpoint(), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -286,9 +312,18 @@
     }
 
     activeAudio.src = audioUrls[currentIndex];
+    activeAudio.load();
     updateProgress();
     setStatus(`Playing section ${currentIndex + 1} of ${chunks.length}. Preparing the next section in the background.`);
-    await activeAudio.play();
+    try {
+      await activeAudio.play();
+    } catch (error) {
+      if (/NotAllowedError/i.test(String(error?.name || error))) {
+        setStatus("Audio is ready. Tap the play control in the audio bar once; the remaining sections will continue automatically.");
+      } else {
+        throw error;
+      }
+    }
   }
 
   async function playNextChunk() {
@@ -310,9 +345,12 @@
     }
   }
 
-  function stopNeuralPlayback() {
+  function resumePlayback() {
+    activeAudio.play().catch(error => setStatus(humanizeError(error)));
+  }
+
+  function stopNeuralPlayback(showMessage) {
     stopped = true;
-    generating = false;
     prefetchPromise = null;
     if (activeAudio) {
       activeAudio.pause();
@@ -324,6 +362,7 @@
     chunks = [];
     currentIndex = 0;
     updateProgress();
+    if (showMessage) setStatus("Neural reading stopped.");
   }
 
   async function restartNeuralPlayback() {
@@ -377,15 +416,22 @@
     if (status) status.textContent = message;
   }
 
-  function showPlaybackError(error) {
-    setStatus(humanizeError(error));
-  }
-
   function humanizeError(error) {
     const message = String(error?.message || error || "Unknown error");
-    if (/Failed to fetch|NetworkError/i.test(message)) return "The secure voice server could not be reached. Check the server URL or cellular connection.";
-    if (/401|API key|authentication/i.test(message)) return "The secure voice server needs a valid OpenAI API key.";
-    if (/429|limit|quota|billing/i.test(message)) return "The neural voice account reached a usage or billing limit.";
+    if (/Failed to fetch|NetworkError/i.test(message)) return "The secure voice server could not be reached. Check the cellular or Wi-Fi connection and retry.";
+    if (/OPENAI_API_KEY|401|API key|authentication/i.test(message)) return "The Cloudflare voice function needs a valid OPENAI_API_KEY secret.";
+    if (/429|limit|quota|billing|credit/i.test(message)) return "The neural voice account reached a usage, credit, or billing limit.";
+    if (/NotAllowedError/i.test(message)) return "Audio is ready. Tap the play control in the audio bar once.";
     return message;
+  }
+
+  function escapeAttribute(value) {
+    return String(value || "").replace(/[&<>"']/g, character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#039;"
+    }[character]));
   }
 })();
