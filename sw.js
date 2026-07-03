@@ -1,11 +1,11 @@
-const CACHE_NAME = "cp-command-center-v5-3-0-neural-reader-20260702";
+const CACHE_NAME = "cp-command-center-v5-3-1-cloudflare-voice-20260702";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css?v=5.3.0",
   "./app.js?v=5.3.0",
   "./news-commute.js?v=5.3.0",
-  "./neural-reader.js?v=5.3.0",
+  "./neural-reader.js?v=5.3.1",
   "./manifest.webmanifest?v=5.3.0",
   "./icon.svg"
 ];
@@ -55,8 +55,8 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // Cross-origin weather, news, and neural-voice calls stay network-only.
-  // Never substitute index.html for JSON, RSS, API, or audio requests.
+  // Cross-origin weather and news calls stay network-only. The secure
+  // same-origin /api/tts endpoint uses POST and bypasses this cache handler.
   if (!sameOrigin) return;
 
   event.respondWith(cacheFirstStatic(request));
@@ -90,7 +90,7 @@ async function injectNeuralReader(response) {
   if (!contentType.includes("text/html")) return response;
 
   const html = await response.text();
-  const scriptTag = '<script src="./neural-reader.js?v=5.3.0" defer></script>';
+  const scriptTag = '<script src="./neural-reader.js?v=5.3.1" defer></script>';
   const enhancedHtml = html.includes("neural-reader.js")
     ? html
     : html.replace("</body>", `  ${scriptTag}\n  </body>`);
