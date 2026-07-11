@@ -2,7 +2,9 @@ const CACHE = "cp-command-center-6.1.0";
 const SHELL = [
   "./",
   "./index.html",
-  "./app-core-v6.js?v=6.1.0",
+  "./styles-v6.css?v=6.1.0",
+  "./app-core-base-v6.js?v=6.1.0",
+  "./app-core-ui-v6.js?v=6.1.0",
   "./app-data-v6.js?v=6.1.0",
   "./app-live-v6.js?v=6.1.0",
   "./manifest-v6.webmanifest?v=6.1.0",
