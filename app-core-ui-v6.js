@@ -56,7 +56,7 @@ function renderInstallStatus() { setText("#installHelp", installPrompt ? "Instal
 
 async function registerServiceWorker() {
   if(!("serviceWorker" in navigator)){renderBuildStatus();return;}
-  try{const registration=await navigator.serviceWorker.register(`./sw-v6.js?v=${VERSION}`);await registration.update();}
+  try{const registration=await navigator.serviceWorker.register(`./sw.js?v=${VERSION}`);await registration.update();}
   catch(error){console.warn("Service worker",error);} renderBuildStatus();
 }
 function renderNetwork() { setText("#networkState", navigator.onLine?"Online":"Offline"); }
