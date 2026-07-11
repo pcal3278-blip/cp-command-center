@@ -1,5 +1,5 @@
-const CACHE = "cp-command-center-6.1.1-reader";
-const SHELL = [
+const CACHE_NAME = "cp-command-center-6.1.2-cast25";
+const APP_SHELL = [
   "./",
   "./index.html",
   "./styles-v6.css?v=6.1.0",
@@ -7,71 +7,112 @@ const SHELL = [
   "./app-core-ui-v6.js?v=6.1.0",
   "./app-data-v6.js?v=6.1.0",
   "./app-live-v6.js?v=6.1.0",
-  "./reader-visibility-v6.js?v=6.1.1",
+  "./reader-enhancements.js?v=6.1.2",
   "./neural-reader.js?v=6.1.1",
+  "./cast25-built-in.js?v=2026-07-11-1",
+  "./readings/cast25-2026-07-11.txt?v=2026-07-11-1",
   "./manifest-v6.webmanifest?v=6.1.0",
   "./icon-v6.svg"
 ];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key.startsWith("cp-command-center-") && key !== CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key.startsWith("cp-command-center-") && key !== CACHE_NAME)
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  const request = event.request;
+  if (request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
-  if (event.request.mode === "navigate") {
-    event.respondWith(networkFirstNavigation(event.request));
+  const requestUrl = new URL(request.url);
+  const sameOrigin = requestUrl.origin === self.location.origin;
+
+  if (request.mode === "navigate") {
+    event.respondWith(networkFirstNavigation(request));
     return;
   }
 
-  if (url.origin !== location.origin) return;
-
-  event.respondWith(
-    fetch(event.request).then(response => {
-      if (response.ok && response.type === "basic") {
-        const copy = response.clone();
-        caches.open(CACHE).then(cache => cache.put(event.request, copy));
-      }
-      return response;
-    }).catch(() => caches.match(event.request, { ignoreSearch: true }))
-  );
+  if (!sameOrigin) return;
+  event.respondWith(cacheFirstStatic(request));
 });
 
 async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Navigation failed: ${response.status}`);
+    if (!response.ok || response.redirected) throw new Error(`Navigation failed: ${response.status}`);
 
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("text/html")) return response;
-
-    const html = await response.text();
-    const helperTag = '<script src="./reader-visibility-v6.js?v=6.1.1" defer></script>';
-    const enhancedHtml = html.includes("reader-visibility-v6.js")
-      ? html
-      : html.replace("</body>", `  ${helperTag}\n</body>`);
-
-    const headers = new Headers(response.headers);
-    headers.delete("content-length");
-    headers.set("Cache-Control", "no-cache");
-    const enhanced = new Response(enhancedHtml, { status: response.status, statusText: response.statusText, headers });
-
-    const cache = await caches.open(CACHE);
-    await cache.put("./index.html", enhanced.clone());
-    return enhanced;
+    const enhancedResponse = await injectReaderAndCast25(response);
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put("./index.html", enhancedResponse.clone());
+    return enhancedResponse;
   } catch {
-    return (await caches.match("./index.html", { ignoreSearch: true }))
-      || (await caches.match("./", { ignoreSearch: true }))
-      || new Response("CP Command Center is temporarily unavailable. Reconnect and reopen the app.", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+    const cached = await caches.match("./index.html", { ignoreSearch: true })
+      || await caches.match("./", { ignoreSearch: true });
+
+    return cached || new Response(
+      "CP Command Center is temporarily unavailable. Reconnect and reopen the app.",
+      { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+    );
   }
+}
+
+async function injectReaderAndCast25(response) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("text/html")) return response;
+
+  let html = await response.text();
+  const scripts = [
+    '<script src="./reader-enhancements.js?v=6.1.2" defer></script>',
+    '<script src="./cast25-built-in.js?v=2026-07-11-1" defer></script>'
+  ];
+
+  for (const script of scripts) {
+    const source = script.match(/src="([^"]+)/)?.[1]?.split("?")[0];
+    if (source && !html.includes(source)) html = html.replace("</body>", `  ${script}\n</body>`);
+  }
+
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.set("Cache-Control", "no-cache");
+  return new Response(html, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function cacheFirstStatic(request) {
+  const cached = await caches.match(request, { ignoreSearch: true });
+  if (cached) {
+    refreshStatic(request);
+    return cached;
+  }
+
+  const response = await fetch(request);
+  if (response.ok && !response.redirected && response.type === "basic") {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
+
+function refreshStatic(request) {
+  fetch(request, { cache: "no-cache" })
+    .then(async response => {
+      if (!response.ok || response.redirected || response.type !== "basic") return;
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, response);
+    })
+    .catch(() => {});
 }
