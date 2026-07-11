@@ -1,267 +1,150 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0b1020">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="CP Command">
-    <title>CP Command Center Version 5.2.2</title>
-    <link rel="manifest" href="manifest.webmanifest?v=5.2.2">
-    <link rel="stylesheet" href="styles.css?v=5.2.2">
-  </head>
-  <body>
-    <div id="loading" class="loading-screen">
-      <div class="loader-mark">CP</div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08111f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CP Command">
+  <meta name="description" content="Paul's private local-first command center for commute, weather, reading, vehicles, maintenance, health, and retirement planning.">
+  <title>CP Command Center 6.1</title>
+  <link rel="manifest" href="manifest-v6.webmanifest?v=6.1.0">
+  <link rel="icon" href="icon-v6.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-v6.svg">
+  <link rel="stylesheet" href="styles-v6.css?v=6.1.0">
+</head>
+<body>
+  <div id="loading" class="loading"><div class="brand-mark">CP</div><div><strong>Command Center</strong><span>Starting 6.1</span></div></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div class="app-shell">
+    <header class="topbar glass">
       <div>
-        <strong>CP Command Center</strong>
-        <span>Version 5.2.2</span>
+        <p class="eyebrow">CP Command Center</p>
+        <h1 id="screenTitle">Dashboard</h1>
+        <p class="build-line">Version 6.1.0 · <span id="networkState">Checking network…</span></p>
       </div>
-    </div>
+      <button id="themeToggle" class="icon-button" aria-label="Toggle theme">◐</button>
+    </header>
 
-    <div class="weather-motion" aria-hidden="true">
-      <span></span><span></span><span></span><span></span>
-    </div>
-
-    <div class="app-shell">
-      <header class="topbar glass">
-        <div>
-          <p class="eyebrow">CP Command Center</p>
-          <h1 id="screenTitle">Dashboard</h1>
-          <p class="version-line">Version 5.2.2 · Build: 5.2.2 · <span id="lastUpdated">Last Updated: --</span></p>
+    <main id="app" tabindex="-1">
+      <section class="screen active" data-screen="dashboard">
+        <div class="page-grid">
+          <article class="hero glass span-2">
+            <div><p id="todayLabel" class="eyebrow">Today</p><h2 id="clock">--:--</h2><p id="dateLine">--</p></div>
+            <div class="hero-side"><span>Home</span><strong>West Babylon</strong><small id="lastRefresh">Not refreshed</small></div>
+          </article>
+          <article class="card glass"><div class="card-title"><span>🌦</span><h3>Weather</h3></div><p id="dashboardWeather" class="metric">Loading…</p><p id="dashboardWeatherDetail">West Babylon and Manhattan</p><button data-nav-target="weather">Open weather</button></article>
+          <article class="card glass"><div class="card-title"><span>🚆</span><h3>Commute</h3></div><p class="metric">4:10 AM</p><p>Babylon → Penn · verify in TrainTime before leaving.</p><button data-nav-target="commute">Open commute</button></article>
+          <article class="card glass"><div class="card-title"><span>📖</span><h3>Reader</h3></div><p id="dashboardReader">No active reading.</p><button data-nav-target="reader">Open Reader</button></article>
+          <article class="card glass"><div class="card-title"><span>🚗</span><h3>Vehicle</h3></div><p id="dashboardVehicle">No fill-ups saved.</p><button data-nav-target="vehicles">Log fuel</button></article>
+          <article class="card glass"><div class="card-title"><span>✓</span><h3>Today’s reminders</h3></div><form id="reminderForm" class="inline-form"><input name="text" maxlength="100" placeholder="Add reminder" required><button>Add</button></form><div id="reminderList"></div></article>
+          <article class="card glass"><div class="card-title"><span>🏡</span><h3>Maintenance</h3></div><p id="dashboardMaintenance">No open maintenance items.</p><button data-nav-target="maintenance">Open maintenance</button></article>
+          <article class="card glass"><div class="card-title"><span>💰</span><h3>Retirement</h3></div><p id="dashboardRetirement">Target: May 15, 2033</p><button data-nav-target="retirement">Open retirement</button></article>
+          <article class="card glass"><div class="card-title"><span>⚙️</span><h3>System</h3></div><p id="dashboardSystem">Checking storage and offline cache…</p><button data-nav-target="settings">Open settings</button></article>
         </div>
-        <button class="icon-button" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">◐</button>
-      </header>
+      </section>
 
-      <main id="app" class="content" tabindex="-1">
-        <section class="screen active" data-screen="dashboard">
-          <div class="dashboard-grid">
-            <article class="hero-panel glass">
-              <p class="eyebrow" id="todayLabel">Today</p>
-              <h2 id="clock">--:--</h2>
-              <p id="dateLine">--</p>
-            </article>
-            <article class="card glass weather-card">
-              <div class="card-title"><span>🌦</span><h3>Weather</h3></div>
-              <p class="metric" id="dashboardWeatherMetric">Loading live weather...</p>
-              <p id="dashboardWeatherDetail">West Babylon forecast updating.</p>
-            </article>
-            <article class="card glass">
-              <div class="card-title"><span>🚆</span><h3>Quick Commute</h3></div>
-              <p class="metric">4:10 AM Babylon → Penn</p>
-              <p id="dashboardCommuteDetail">AM and afternoon LIRR trains saved.</p>
-            </article>
-            <article class="card glass">
-              <div class="card-title"><span>📰</span><h3>News & AI</h3></div>
-              <p id="foxNewsSummary">Loading current news and AI updates...</p>
-              <button data-jump="news">Open News Center</button>
-            </article>
-            <article class="card glass">
-              <div class="card-title"><span>✓</span><h3>Today's Reminders</h3></div>
-              <ul id="reminderList" class="compact-list"></ul>
-              <form id="reminderForm" class="inline-form">
-                <input name="reminder" placeholder="Add reminder" autocomplete="off">
-                <button>Add</button>
-              </form>
-            </article>
-            <article class="card glass">
-              <div class="card-title"><span>❤️</span><h3>Health Summary</h3></div>
-              <p id="healthSummary">No health entries yet.</p>
-            </article>
-            <article class="card glass">
-              <div class="card-title"><span>🚗</span><h3>Vehicle Summary</h3></div>
-              <p id="vehicleSummary">No fuel entries yet.</p>
-            </article>
-            <article class="card glass">
-              <div class="card-title"><span>💰</span><h3>Retirement Summary</h3></div>
-              <p id="retirementSummary">No retirement entries yet.</p>
-            </article>
-            <article class="card glass quick-actions">
-              <div class="card-title"><span>⚡</span><h3>Quick Actions</h3></div>
-              <button data-jump="news">Open News & AI</button>
-              <button data-jump="reader">Open Reader</button>
-              <button data-jump="mpg">Log Fuel</button>
-              <button data-jump="health">Log Health</button>
-              <button data-jump="status">Build Status</button>
-            </article>
-          </div>
-        </section>
+      <section class="screen" data-screen="commute">
+        <div class="page-grid">
+          <article class="card glass span-2 highlight"><div class="card-title"><span>🚆</span><h3>Saved LIRR commute</h3></div><div class="trip-grid"><div><small>Morning</small><strong>4:10 AM</strong><span>Babylon → Penn</span></div><div><small>Afternoon</small><strong>2:32 PM</strong><span>Penn → Babylon</span></div><div><small>Later option</small><strong>6:10 PM</strong><span>Penn → Babylon</span></div></div><p class="warning">These are saved reference times, not a live guarantee. Confirm delay, cancellation, track, holiday schedule, and transfers in TrainTime.</p><div class="controls"><a class="button-link" href="https://new.mta.info/traintime" target="_blank" rel="noopener">Open TrainTime</a><a class="button-link secondary" href="https://www.mta.info/alerts" target="_blank" rel="noopener">MTA alerts</a></div></article>
+          <article class="card glass"><h3>Commute notes</h3><textarea data-field="commuteNotes" placeholder="Track changes, parking, backup routes…"></textarea></article>
+          <article class="card glass"><h3>Weather impact</h3><p id="commuteWeather">Loading conditions…</p></article>
+          <article class="card glass span-2"><h3>Backup plan</h3><textarea data-field="commuteBackup" placeholder="Alternative train, drive, subway, contact…"></textarea></article>
+        </div>
+      </section>
 
-        <section class="screen" data-screen="commute">
-          <div class="page-grid">
-            <article class="card glass highlight">
-              <div class="card-title"><span>🚆</span><h3>Morning: Babylon → Penn</h3></div>
-              <p class="metric">Normal train: 4:10 AM</p>
-              <p id="lirrStatus">Default commute saved · live status opens in MTA TrainTime.</p>
-              <div class="controls"><button id="openMtaStatus">MTA Status</button><button id="openTrainTime">TrainTime</button></div>
-            </article>
-            <article class="card glass">
-              <h3>Service Alerts</h3>
-              <p>Saved manual alerts and notes appear here.</p>
-              <textarea data-store="commuteAlerts" placeholder="Add commute alerts or notes"></textarea>
-            </article>
-            <article class="card glass span-2">
-              <div class="card-title"><span>🌆</span><h3>Afternoon Return: Penn → Babylon</h3></div>
-              <p>Your saved 2:32 PM train and every direct Babylon train leaving Penn from 6:00 through 6:30 PM.</p>
-              <div id="afternoonTrainList"><p>Loading saved afternoon trains...</p></div>
-            </article>
-            <article class="card glass"><h3>Commute Weather</h3><p id="commuteWeather">Live West Babylon weather updating.</p></article>
-            <article class="card glass"><h3>Schedule Rule</h3><p>Use the official weekday timetable as the base schedule and confirm track, delay, cancellation, holiday, and transfer details in TrainTime before boarding.</p></article>
-          </div>
-        </section>
+      <section class="screen" data-screen="weather">
+        <div class="page-grid">
+          <article class="hero glass span-2"><div><p class="eyebrow">Live weather</p><h2 id="weatherHero">Loading…</h2><p id="weatherHeroDetail">Open-Meteo data</p></div><button id="refreshWeather">Refresh</button></article>
+          <article class="card glass"><h3>West Babylon</h3><div id="westBabylonWeather" class="weather-block">Loading…</div></article>
+          <article class="card glass"><h3>Hell’s Kitchen</h3><div id="nycWeather" class="weather-block">Loading…</div></article>
+          <article class="card glass span-2"><h3>Hourly commute window</h3><div id="hourlyWeather" class="hourly-strip">Loading…</div></article>
+          <article class="card glass span-2"><h3>3-day outlook</h3><div id="dailyWeather" class="daily-grid">Loading…</div></article>
+          <article class="card glass span-2 warning-card"><h3>Safety note</h3><p>Weather data can lag or fail. For warnings and emergencies, use the National Weather Service and local alerts.</p><a class="button-link secondary" href="https://www.weather.gov/okx/" target="_blank" rel="noopener">NWS New York</a></article>
+        </div>
+      </section>
 
-        <section class="screen" data-screen="briefing">
-          <div class="page-grid">
-            <article class="card glass span-2"><div class="card-title"><span>📰</span><h3>Morning Briefing</h3></div><p>Last updated: <span id="briefUpdated">--</span></p></article>
-            <article class="card glass"><h3>Weather</h3><p>Live weather appears in the Weather tab.</p></article>
-            <article class="card glass"><h3>Commute</h3><p>4:10 AM and saved afternoon return trains are highlighted.</p></article>
-            <article class="card glass"><h3>Top News</h3><textarea data-store="topNews" placeholder="Paste top news notes"></textarea></article>
-            <article class="card glass"><h3>AI News</h3><textarea data-store="aiNews" placeholder="Paste AI news notes"></textarea></article>
-            <article class="card glass"><h3>Markets</h3><textarea data-store="markets" placeholder="Market notes"></textarea></article>
-            <article class="card glass"><h3>Calendar</h3><textarea data-store="calendar" placeholder="Calendar notes"></textarea></article>
-            <article class="card glass"><h3>Tasks</h3><textarea data-store="tasks" placeholder="Task list"></textarea></article>
-            <article class="card glass"><h3>Quick Notes</h3><textarea data-store="quickNotes" placeholder="Anything important"></textarea></article>
-          </div>
-        </section>
+      <section class="screen" data-screen="news">
+        <div class="page-grid">
+          <article class="card glass span-2"><div class="card-title"><span>📰</span><h3>News launchpad</h3></div><p id="newsStatus">Refresh to request current RSS headlines. Source buttons always work if a feed is blocked.</p><div class="controls"><button id="refreshNews">Refresh headlines</button><button id="sendNewsToReader" class="secondary">Send digest to Reader</button></div></article>
+          <article class="card glass span-2"><h3>Long Island / NYC / MTA</h3><div id="localNewsFeed" class="news-list"></div><div class="source-links"><a href="https://longisland.news12.com/" target="_blank" rel="noopener">News 12 Long Island</a><a href="https://www.mta.info/" target="_blank" rel="noopener">MTA</a><a href="https://abc7ny.com/" target="_blank" rel="noopener">ABC7NY</a></div></article>
+          <article class="card glass"><h3>AI & technology</h3><div id="aiNewsFeed" class="news-list"></div></article>
+          <article class="card glass"><h3>Markets & retirement</h3><div id="marketNewsFeed" class="news-list"></div></article>
+          <article class="card glass span-2"><h3>National & world</h3><div id="worldNewsFeed" class="news-list"></div></article>
+        </div>
+      </section>
 
-        <section class="screen" data-screen="news">
-          <div class="page-grid">
-            <article class="card glass span-2">
-              <div class="card-title"><span>📰</span><h3>Live News & AI Center</h3></div>
-              <p id="newsStatus" class="news-status">Preparing current feeds...</p>
-              <div class="news-toolbar">
-                <button id="refreshNews">Refresh all feeds</button>
-                <button id="sendNewsToReader">Send complete digest to Reader</button>
-              </div>
-            </article>
-            <article class="card glass span-2">
-              <div class="card-title"><span>🤖</span><h3>All AI News & Updates</h3></div>
-              <p>OpenAI, ChatGPT, Codex, Anthropic, Claude, Gemini, DeepMind, Apple Intelligence, Copilot, Meta AI, chips, agents, robotics, safety, regulation, and jobs.</p>
-              <div id="aiNewsFeed" class="news-grid"><p>Loading AI feeds...</p></div>
-            </article>
-            <article class="card glass span-2">
-              <div class="card-title"><span>🌎</span><h3>Local, NYC, U.S., Markets & World</h3></div>
-              <div id="generalNewsFeed" class="news-grid"><p>Loading general news feeds...</p></div>
-            </article>
-          </div>
-        </section>
+      <section class="screen reader-screen" data-screen="reader">
+        <div class="reader-toolbar glass"><input id="readerTitle" placeholder="Reading title"><label class="file-button">Import text<input id="readerImport" type="file" accept=".txt,text/plain"></label><button id="saveReading">Save</button><button id="favoriteReading">☆</button><button id="newReading" class="secondary">New</button></div>
+        <div class="reader-layout">
+          <aside class="card glass reader-library"><h3>Categories</h3><div id="readerCategories" class="category-grid"></div><h3>Saved</h3><div id="readingLibrary"></div></aside>
+          <article class="card glass reader-main"><textarea id="readerText" class="reader-editor" placeholder="Paste a Cast25 report, story, article, or notes here."></textarea><div class="reader-meta"><span id="readerSection">Section 0 of 0</span><span id="readerTime">0 min</span></div><progress id="readerProgress" value="0" max="100"></progress><div class="controls"><button id="readerPlay">▶ Play</button><button id="readerPause" class="secondary">⏸ Pause</button><button id="readerResume" class="secondary">▶ Resume</button><button id="readerStop" class="danger">■ Stop</button><button id="readerRestart" class="secondary">↺ Restart</button></div><div class="settings-row"><label>Speed<select id="readerRate"><option value="0.7">0.7</option><option value="0.8" selected>0.8</option><option value="0.9">0.9</option><option value="1">1.0</option><option value="1.2">1.2</option></select></label><label>Voice<select id="readerVoice"></select></label><label><input id="readerLarge" type="checkbox"> Large text</label></div><p id="readerStatus" class="muted">Reader ready.</p></article>
+        </div>
+      </section>
 
-        <section class="screen" data-screen="weather">
-          <div class="page-grid">
-            <article class="hero-panel glass span-2"><p class="eyebrow">Current Conditions</p><h2 id="weatherHeroMetric">Loading...</h2><p id="weatherHeroDetail">West Babylon live weather updating.</p></article>
-            <article class="card glass span-2 radar"><h3>Animated Radar</h3><div class="radar-sweep"></div></article>
-            <article class="card glass"><h3>Hourly</h3><p id="hourlyForecast">Loading hourly forecast...</p></article>
-            <article class="card glass"><h3>Daily Forecast</h3><p id="dailyForecast">Loading daily forecast...</p></article>
-            <article class="card glass"><h3>Alerts</h3><p id="weatherAlerts">Live alert source not configured · use official weather alerts for emergencies.</p></article>
-          </div>
-        </section>
+      <section class="screen" data-screen="vehicles">
+        <div class="page-grid">
+          <article class="card glass span-2"><div class="card-title"><span>⛽</span><h3>MPG / fuel tracker</h3></div><form id="fuelForm" class="form-grid"><select name="vehicle" id="fuelVehicle" required><option>2021 Chevy Silverado RST</option><option>2007 Honda Civic</option></select><input name="date" id="fuelDate" type="date" required><input name="odometer" type="number" step="0.1" inputmode="decimal" placeholder="Current odometer" required><input name="gallons" type="number" step="0.001" inputmode="decimal" placeholder="Gallons filled" required><input name="totalPaid" type="number" step="0.01" inputmode="decimal" placeholder="Total paid, example 52.80" required><button id="fuelSubmit">Save fuel entry</button><button type="button" id="cancelFuelEdit" class="secondary hidden">Cancel edit</button></form><p class="muted">Miles driven is calculated from the previous odometer. Price per gallon and cost per mile are calculated automatically.</p></article>
+          <article class="card glass"><h3>Vehicle summary</h3><select id="vehicleFilter"><option>2021 Chevy Silverado RST</option><option>2007 Honda Civic</option></select><div id="fuelStats" class="stats-grid"></div></article>
+          <article class="card glass"><h3>Actions</h3><div class="stack"><button id="duplicateFuel">Duplicate last entry</button><button id="exportFuelCsv" class="secondary">Export CSV</button><button id="exportFuelJson" class="secondary">Export JSON</button><label class="file-button full">Import JSON<input id="importFuelJson" type="file" accept="application/json"></label></div></article>
+          <article class="card glass span-2"><h3>Fuel history</h3><div id="fuelHistory" class="table-wrap"></div></article>
+        </div>
+      </section>
 
-        <section class="screen reader-screen" data-screen="reader">
-          <div class="reader-toolbar glass">
-            <input id="readerTitle" placeholder="Reading title">
-            <label class="file-button">Import<input id="fileImport" type="file" accept=".txt,text/plain"></label>
-            <button id="saveReading">Save</button>
-            <button id="favoriteReading">☆</button>
-            <button id="fullscreenReader">⛶</button>
-          </div>
-          <div class="reader-layout">
-            <aside class="card glass reader-library">
-              <h3>Library</h3>
-              <div id="libraryList"></div>
-              <h3>Recent</h3>
-              <div id="historyList"></div>
-            </aside>
-            <article class="card glass reader-main">
-              <textarea id="readerText" class="reader-editor" placeholder="Paste text here or send the full News & AI digest here."></textarea>
-              <div class="reader-status">
-                <span id="sectionStatus">Section 0 of 0</span>
-                <span id="readingTime">Estimated reading time: 0 min</span>
-              </div>
-              <progress id="readerProgress" value="0" max="100"></progress>
-              <div class="controls">
-                <button id="playReader">▶ Play</button>
-                <button id="pauseReader">⏸ Pause</button>
-                <button id="resumeReader">▶ Resume</button>
-                <button id="stopReader">■ Stop</button>
-                <button id="restartReader">↺ Restart</button>
-              </div>
-              <div class="settings-row">
-                <label>Speed<select id="speechRate"><option>0.8</option><option selected>1.0</option><option>1.2</option><option>1.5</option><option>2.0</option></select></label>
-                <label>Voice<select id="voiceSelect"></select></label>
-                <label><input id="largeText" type="checkbox"> Large text</label>
-                <label><input id="darkReader" type="checkbox"> Dark reading mode</label>
-              </div>
-            </article>
-          </div>
-        </section>
+      <section class="screen" data-screen="maintenance">
+        <div class="page-grid">
+          <article class="card glass span-2"><h3>Home / vehicle / work maintenance</h3><form id="maintenanceForm" class="form-grid"><select name="area"><option>Home</option><option>Silverado</option><option>Civic</option><option>Work</option><option>Seasonal</option></select><input name="task" maxlength="120" placeholder="Task" required><input name="due" type="date"><select name="priority"><option>High</option><option selected>Medium</option><option>Low</option></select><textarea name="notes" placeholder="Parts, measurements, observations…"></textarea><button>Save item</button></form></article>
+          <article class="card glass span-2"><div class="card-title"><h3>Open items</h3><button id="showCompletedMaintenance" class="secondary">Show completed</button></div><div id="maintenanceList"></div></article>
+        </div>
+      </section>
 
-        <section class="screen" data-screen="mpg">
-          <div class="page-grid">
-            <article class="card glass span-2"><h3>MPG Tracker</h3><form id="fuelForm" class="form-grid"><select name="vehicle" id="fuelVehicle" required></select><input name="date" id="fuelDate" type="date" required><input name="currentMileage" type="number" placeholder="Current odometer" required><input name="gallons" type="number" step="0.01" placeholder="Gallons purchased" required><input name="cost" type="number" step="0.01" placeholder="Fuel cost" required><button>Save Fuel Entry</button></form></article>
-            <article class="card glass"><h3>Vehicle Selector</h3><select id="vehicleSelect"></select><p id="mpgStats">No entries.</p></article>
-            <article class="card glass"><h3>Fuel History</h3><div id="fuelHistory"></div></article>
-            <article class="card glass span-2"><canvas id="mpgChart" height="130"></canvas></article>
-          </div>
-        </section>
+      <section class="screen" data-screen="health">
+        <div class="page-grid">
+          <article class="card glass span-2"><h3>Manual health log</h3><form id="healthForm" class="form-grid"><input name="date" type="date" required><input name="bp" placeholder="Blood pressure, e.g. 120/80"><input name="weight" type="number" step="0.1" placeholder="Weight"><input name="sleep" type="number" step="0.1" placeholder="Sleep hours"><input name="recovery" type="number" min="0" max="100" placeholder="Recovery %"><input name="heartRate" type="number" placeholder="Heart rate"><input name="glucose" type="number" placeholder="Glucose"><textarea name="notes" placeholder="Symptoms, medication, exercise, context…"></textarea><button>Save health entry</button></form></article>
+          <article class="card glass"><h3>Latest</h3><p id="healthLatest">No entries.</p></article>
+          <article class="card glass"><h3>Important</h3><p>This is a personal log, not diagnosis or emergency monitoring.</p></article>
+          <article class="card glass span-2"><h3>History</h3><div id="healthHistory"></div></article>
+        </div>
+      </section>
 
-        <section class="screen" data-screen="retirement">
-          <div class="page-grid">
-            <article class="card glass span-2"><h3>Retirement</h3><form id="retirementForm" class="form-grid"><input name="k401" type="number" placeholder="401(k)"><input name="b457" type="number" placeholder="457(b)"><input name="pension" type="number" placeholder="Pension estimate"><input name="contribution" type="number" placeholder="Monthly contribution"><input name="netWorth" type="number" placeholder="Net worth estimate"><button>Save Snapshot</button></form></article>
-            <article class="card glass"><h3>Countdown</h3><p id="retirementCountdown">Set a target date in Settings.</p></article>
-            <article class="card glass"><h3>Summary</h3><p id="retirementStats">No snapshots.</p></article>
-            <article class="card glass span-2"><canvas id="retirementChart" height="130"></canvas></article>
-          </div>
-        </section>
+      <section class="screen" data-screen="retirement">
+        <div class="page-grid">
+          <article class="card glass span-2"><h3>Retirement snapshot</h3><form id="retirementForm" class="form-grid"><input name="date" type="date" required><input name="k401" type="number" step="0.01" placeholder="401(k) balance"><input name="b457" type="number" step="0.01" placeholder="457(b) balance"><input name="pension" type="number" step="0.01" placeholder="Estimated annual pension"><input name="monthlyContribution" type="number" step="0.01" placeholder="Monthly contributions"><input name="cash" type="number" step="0.01" placeholder="Cash / emergency savings"><button>Save snapshot</button></form></article>
+          <article class="card glass"><h3>Target</h3><input id="retirementTarget" type="date" value="2033-05-15"><p id="retirementCountdown"></p></article>
+          <article class="card glass"><h3>Latest totals</h3><div id="retirementStats" class="stats-grid"></div></article>
+          <article class="card glass span-2"><h3>History</h3><div id="retirementHistory"></div></article>
+        </div>
+      </section>
 
-        <section class="screen" data-screen="health">
-          <div class="page-grid">
-            <article class="card glass span-2"><h3>Health Dashboard</h3><form id="healthForm" class="form-grid"><input name="bp" placeholder="Blood pressure"><input name="weight" type="number" step="0.1" placeholder="Weight"><input name="sleep" type="number" step="0.1" placeholder="Sleep hours"><input name="recovery" type="number" placeholder="Recovery %"><input name="heartRate" type="number" placeholder="Heart rate"><input name="glucose" type="number" placeholder="Glucose"><input name="notes" placeholder="Daily notes"><button>Save Health Entry</button></form></article>
-            <article class="card glass"><h3>Latest</h3><p id="latestHealth">No entries.</p></article>
-            <article class="card glass span-2"><canvas id="healthChart" height="130"></canvas></article>
-          </div>
-        </section>
+      <section class="screen" data-screen="settings">
+        <div class="page-grid">
+          <article class="card glass"><h3>Appearance</h3><select id="themeSelect"><option value="auto">Automatic</option><option value="dark">Dark</option><option value="light">Light</option></select></article>
+          <article class="card glass"><h3>Install</h3><button id="installButton">Install app</button><p id="installHelp" class="muted">On iPhone: Share → Add to Home Screen.</p></article>
+          <article class="card glass span-2"><h3>Backup all data</h3><div class="controls"><button id="exportAll">Export JSON</button><label class="file-button">Import JSON<input id="importAll" type="file" accept="application/json"></label><button id="resetAll" class="danger">Reset all data</button></div></article>
+          <article class="card glass span-2"><h3>Build status</h3><dl id="buildStatus" class="status-list"></dl></article>
+        </div>
+      </section>
+    </main>
 
-        <section class="screen" data-screen="home">
-          <div class="page-grid">
-            <article class="card glass span-2"><h3>Home Maintenance</h3><form id="homeForm" class="form-grid"><input name="area" placeholder="Project / appliance / vehicle"><input name="task" placeholder="Maintenance task"><input name="due" type="date"><button>Save Item</button></form></article>
-            <article class="card glass"><h3>Seasonal Reminders</h3><p>HVAC service · filters · smoke detectors · gutters · vehicle checks.</p></article>
-            <article class="card glass"><h3>History</h3><div id="homeHistory"></div></article>
-          </div>
-        </section>
+    <nav class="bottom-nav glass" aria-label="Primary navigation">
+      <button class="active" data-nav="dashboard"><span>🏠</span><b>Home</b></button>
+      <button data-nav="commute"><span>🚆</span><b>Commute</b></button>
+      <button data-nav="weather"><span>🌦</span><b>Weather</b></button>
+      <button data-nav="news"><span>📰</span><b>News</b></button>
+      <button data-nav="reader"><span>📖</span><b>Reader</b></button>
+      <button data-nav="vehicles"><span>🚗</span><b>MPG</b></button>
+      <button data-nav="maintenance"><span>🔧</span><b>Maintain</b></button>
+      <button data-nav="health"><span>❤️</span><b>Health</b></button>
+      <button data-nav="retirement"><span>💰</span><b>Retire</b></button>
+      <button data-nav="settings"><span>⚙️</span><b>Settings</b></button>
+    </nav>
+  </div>
 
-        <section class="screen" data-screen="settings">
-          <div class="page-grid">
-            <article class="card glass"><h3>Theme</h3><select id="themeSelect"><option value="auto">Automatic</option><option value="dark">Dark Mode</option><option value="light">Light Mode</option></select></article>
-            <article class="card glass"><h3>Reader Settings</h3><label><input id="autoSaveReader" type="checkbox" checked> Auto-save current reading</label></article>
-            <article class="card glass"><h3>Units</h3><select data-store="units"><option>Imperial</option><option>Metric</option></select></article>
-            <article class="card glass"><h3>Notifications</h3><label><input data-store-check="notifications" type="checkbox"> Enable local reminder preference</label></article>
-            <article class="card glass span-2"><h3>Data Backup</h3><div class="controls"><button id="exportData">Export</button><label class="file-button">Import<input id="importData" type="file" accept="application/json"></label><button id="resetData" class="danger">Reset</button></div><textarea id="backupOutput" readonly placeholder="Exported backup appears here"></textarea></article>
-          </div>
-        </section>
-
-        <section class="screen" data-screen="status">
-          <div class="page-grid">
-            <article class="card glass span-2"><div class="card-title"><span>⚙</span><h3>Build Status</h3></div><dl class="status-list" id="statusList"></dl></article>
-          </div>
-        </section>
-      </main>
-
-      <nav class="bottom-nav glass" aria-label="Primary">
-        <button class="active" data-nav="dashboard"><span>🏠</span><b>Dashboard</b></button>
-        <button data-nav="commute"><span>🚆</span><b>Commute</b></button>
-        <button data-nav="news"><span>📰</span><b>News & AI</b></button>
-        <button data-nav="briefing"><span>📋</span><b>Briefing</b></button>
-        <button data-nav="weather"><span>🌦</span><b>Weather</b></button>
-        <button data-nav="reader"><span>📖</span><b>Reader</b></button>
-        <button data-nav="mpg"><span>🚗</span><b>MPG</b></button>
-        <button data-nav="retirement"><span>💰</span><b>Retirement</b></button>
-        <button data-nav="health"><span>❤️</span><b>Health</b></button>
-        <button data-nav="home"><span>🏡</span><b>Home</b></button>
-        <button data-nav="settings"><span>⚙</span><b>Settings</b></button>
-      </nav>
-    </div>
-
-    <script src="app.js?v=5.2.2" defer></script>
-    <script src="news-commute.js?v=5.2.2" defer></script>
-  </body>
+  <script src="app-core-base-v6.js?v=6.1.0" defer></script>
+  <script src="app-core-ui-v6.js?v=6.1.0" defer></script>
+  <script src="app-data-v6.js?v=6.1.0" defer></script>
+  <script src="app-live-v6.js?v=6.1.0" defer></script>
+</body>
 </html>
