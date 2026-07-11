@@ -48,7 +48,6 @@ let toastTimer = null;
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 const uid = () => (window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
-state = loadAndMigrate();
 
 window.addEventListener("DOMContentLoaded", init);
 window.addEventListener("beforeinstallprompt", event => {
@@ -61,6 +60,7 @@ window.addEventListener("offline", renderNetwork);
 
 function init() {
   try {
+    state = loadAndMigrate();
     applyTheme();
     bindNavigation();
     bindGeneralForms();
