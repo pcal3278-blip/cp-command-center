@@ -1,16 +1,15 @@
-const CACHE_NAME = "cp-command-center-7.1.0-neural";
+const CACHE_NAME = "cp-command-center-7.2.0-free-iphone";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles-v6.css?v=6.1.0",
-  "./app-core-base-v6.js?v=7.1.0",
+  "./app-core-base-v6.js?v=7.2.0",
   "./app-core-ui-v6.js?v=6.1.0",
-  "./app-data-v6.js?v=6.1.0",
+  "./app-data-v6.js?v=7.2.0",
   "./app-live-v6.js?v=6.1.0",
-  "./neural-reader.js?v=7.1.0",
   "./cast25-built-in.js?v=2026-07-11-1",
   "./readings/cast25-2026-07-11.txt?v=2026-07-11-1",
-  "./manifest-v6.webmanifest?v=6.1.0",
+  "./manifest-v6.webmanifest?v=7.2.0",
   "./icon-v6.svg"
 ];
 
@@ -55,7 +54,7 @@ async function networkFirstNavigation(request) {
     const response = await fetch(request, { cache: "no-store" });
     if (!response.ok || response.redirected) throw new Error(`Navigation failed: ${response.status}`);
 
-    const enhancedResponse = await injectReaderAndCast25(response);
+    const enhancedResponse = await injectCast25(response);
     const cache = await caches.open(CACHE_NAME);
     await cache.put("./index.html", enhancedResponse.clone());
     return enhancedResponse;
@@ -70,13 +69,12 @@ async function networkFirstNavigation(request) {
   }
 }
 
-async function injectReaderAndCast25(response) {
+async function injectCast25(response) {
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("text/html")) return response;
 
   let html = await response.text();
   const scripts = [
-    '<script src="./neural-reader.js?v=7.1.0" defer></script>',
     '<script src="./cast25-built-in.js?v=2026-07-11-1" defer></script>'
   ];
 

@@ -163,7 +163,9 @@ function importFuelJson(event) {
 function bindReader() {
   $("#readerText").value = state.fields.readerText || "";
   $("#readerTitle").value = state.fields.readerTitle || "";
-  $("#readerRate").value = state.readerRate || "0.8";
+  const freeReaderNeedsReset = localStorage.getItem("cpCommandCenter.freeReaderBuild") !== VERSION;
+  if (freeReaderNeedsReset) state.readerRate = "0.93";
+  $("#readerRate").value = state.readerRate || "0.93";
   $("#readerLarge").checked = Boolean(state.fields.readerLarge);
   updateReaderClass();
   updateReaderChunks();
@@ -228,7 +230,7 @@ function chunkText(text) {
     const sentences = paragraph.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [paragraph];
     let buffer = "";
     for (const sentence of sentences) {
-      if ((buffer + " " + sentence).length > 620 && buffer) { result.push(buffer.trim()); buffer = sentence.trim(); }
+      if ((buffer + " " + sentence).length > 520 && buffer) { result.push(buffer.trim()); buffer = sentence.trim(); }
       else buffer += ` ${sentence.trim()}`;
     }
     if (buffer.trim()) result.push(buffer.trim());
@@ -244,14 +246,14 @@ function speakReader(index) {
   readerIndex = Math.max(0, Math.min(index, readerChunks.length - 1));
   state.readerPosition = readerIndex; saveState(); updateReaderChunks();
   activeUtterance = new window.SpeechSynthesisUtterance(readerChunks[readerIndex]);
-  activeUtterance.rate = Number($("#readerRate").value || 0.8);
-  activeUtterance.pitch = 1;
+  activeUtterance.rate = Number($("#readerRate").value || 0.93);
+  activeUtterance.pitch = 1.03;
   activeUtterance.voice = readerVoices.find(voice => voice.name === $("#readerVoice").value) || null;
   activeUtterance.onstart = () => setText("#readerStatus", `Playing section ${readerIndex + 1}.`);
   activeUtterance.onend = () => {
     if (readerIndex < readerChunks.length - 1) {
       readerIndex += 1; state.readerPosition = readerIndex; saveState(); updateReaderChunks();
-      setTimeout(() => speakReader(readerIndex), 140);
+      setTimeout(() => speakReader(readerIndex), 35);
     } else {
       $("#readerProgress").value = 100; setText("#readerStatus", "Reading complete."); saveReadingHistory();
     }
@@ -264,9 +266,16 @@ function stopReader() { window.speechSynthesis?.cancel(); setText("#readerStatus
 function loadReaderVoices() {
   readerVoices = window.speechSynthesis?.getVoices().filter(v => /^en/i.test(v.lang)) || [];
   const select = $("#readerVoice");
-  select.innerHTML = readerVoices.length ? readerVoices.map(voice => `<option value="${escapeHtml(voice.name)}">${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`).join("") : "<option>Default system voice</option>";
-  const preferred = state.readerVoice && readerVoices.some(v => v.name === state.readerVoice) ? state.readerVoice : readerVoices[3]?.name || readerVoices[0]?.name || "";
-  if (preferred) { select.value = preferred; state.readerVoice = preferred; saveState(); }
+  const samantha = readerVoices.find(voice => /^Samantha$/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
+    || readerVoices.find(voice => /Samantha/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
+    || null;
+  select.innerHTML = readerVoices.length ? readerVoices.map(voice => `<option value="${escapeHtml(voice.name)}">${voice === samantha ? "Recommended • " : ""}${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`).join("") : "<option>Default system voice</option>";
+  const settingsAreCurrent = localStorage.getItem("cpCommandCenter.freeReaderBuild") === VERSION;
+  const savedVoice = settingsAreCurrent && state.readerVoice && readerVoices.some(voice => voice.name === state.readerVoice) ? state.readerVoice : "";
+  const preferred = savedVoice || samantha?.name || readerVoices[0]?.name || "";
+  if (preferred) { select.value = preferred; state.readerVoice = preferred; }
+  localStorage.setItem("cpCommandCenter.freeReaderBuild", VERSION);
+  saveState();
 }
 
 function importReaderText(event) {

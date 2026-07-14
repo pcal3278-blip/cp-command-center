@@ -3,7 +3,7 @@
   "name": "CP Command Center",
   "short_name": "CP Command",
   "description": "Local-first dashboard for commute, weather, reading, vehicles, maintenance, health, and retirement.",
-  "start_url": "./index.html?v=6.1.0",
+  "start_url": "./index.html?v=7.2.0",
   "scope": "./",
   "display": "standalone",
   "background_color": "#07111f",
