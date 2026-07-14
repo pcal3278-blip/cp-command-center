@@ -1,15 +1,14 @@
-const CACHE_NAME = "cp-command-center-7.2.0-free-iphone";
+const CACHE_NAME = "cp-command-center-7.2.2-allison-redirect-repair";
 const APP_SHELL = [
   "./",
-  "./index.html",
   "./styles-v6.css?v=6.1.0",
-  "./app-core-base-v6.js?v=7.2.0",
+  "./app-core-base-v6.js?v=7.2.2",
   "./app-core-ui-v6.js?v=6.1.0",
-  "./app-data-v6.js?v=7.2.0",
+  "./app-data-v6.js?v=7.2.2",
   "./app-live-v6.js?v=6.1.0",
   "./cast25-built-in.js?v=2026-07-11-1",
   "./readings/cast25-2026-07-11.txt?v=2026-07-11-1",
-  "./manifest-v6.webmanifest?v=7.2.0",
+  "./manifest-v6.webmanifest?v=7.2.2",
   "./icon-v6.svg"
 ];
 
@@ -51,16 +50,23 @@ self.addEventListener("fetch", event => {
 
 async function networkFirstNavigation(request) {
   try {
-    const response = await fetch(request, { cache: "no-store" });
+    const canonicalUrl = new URL(request.url);
+    if (canonicalUrl.pathname.endsWith("/index.html")) {
+      canonicalUrl.pathname = canonicalUrl.pathname.slice(0, -"index.html".length);
+    }
+
+    const response = await fetch(canonicalUrl.href, {
+      cache: "no-store",
+      credentials: "same-origin"
+    });
     if (!response.ok || response.redirected) throw new Error(`Navigation failed: ${response.status}`);
 
     const enhancedResponse = await injectCast25(response);
     const cache = await caches.open(CACHE_NAME);
-    await cache.put("./index.html", enhancedResponse.clone());
+    await cache.put("./", enhancedResponse.clone());
     return enhancedResponse;
   } catch {
-    const cached = await caches.match("./index.html", { ignoreSearch: true })
-      || await caches.match("./", { ignoreSearch: true });
+    const cached = await caches.match("./", { ignoreSearch: true });
 
     return cached || new Response(
       "CP Command Center is temporarily unavailable. Reconnect and reopen the app.",
