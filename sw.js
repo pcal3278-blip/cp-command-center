@@ -1,14 +1,13 @@
-const CACHE_NAME = "cp-command-center-6.1.2-cast25";
+const CACHE_NAME = "cp-command-center-7.1.0-neural";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles-v6.css?v=6.1.0",
-  "./app-core-base-v6.js?v=6.1.0",
+  "./app-core-base-v6.js?v=7.1.0",
   "./app-core-ui-v6.js?v=6.1.0",
   "./app-data-v6.js?v=6.1.0",
   "./app-live-v6.js?v=6.1.0",
-  "./reader-enhancements.js?v=6.1.2",
-  "./neural-reader.js?v=6.1.1",
+  "./neural-reader.js?v=7.1.0",
   "./cast25-built-in.js?v=2026-07-11-1",
   "./readings/cast25-2026-07-11.txt?v=2026-07-11-1",
   "./manifest-v6.webmanifest?v=6.1.0",
@@ -77,7 +76,7 @@ async function injectReaderAndCast25(response) {
 
   let html = await response.text();
   const scripts = [
-    '<script src="./reader-enhancements.js?v=6.1.2" defer></script>',
+    '<script src="./neural-reader.js?v=7.1.0" defer></script>',
     '<script src="./cast25-built-in.js?v=2026-07-11-1" defer></script>'
   ];
 
