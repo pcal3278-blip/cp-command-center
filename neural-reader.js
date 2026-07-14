@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const BUILD = "5.3.1";
+  const BUILD = "7.1.0";
   const ENDPOINT_KEY = "cpCommandCenter.neuralVoiceEndpoint";
   const SETTINGS_KEY = "cpCommandCenter.neuralVoiceSettings";
   const DEFAULT_ENDPOINT = "/api/tts";
@@ -9,9 +9,9 @@
 
   const PRESETS = {
     bella: {
-      label: "Bella Calm",
+      label: "Bella Calm — AI",
       voice: "marin",
-      speed: 0.95,
+      speed: 0.88,
       description: "Warm, calm and natural with gentle emotion and deliberate pauses."
     },
     news: {
@@ -61,11 +61,12 @@
     panel.innerHTML = `
       <div class="neural-reader-heading">
         <div>
-          <p class="eyebrow">CP Human Voice</p>
-          <h3>Neural Reader</h3>
+          <p class="eyebrow">CP Neural Voice</p>
+          <h3>Bella-Style AI Reader</h3>
         </div>
         <span class="neural-badge">Build ${BUILD}</span>
       </div>
+      <p class="neural-disclosure">AI-generated voice powered securely by OpenAI. It is not a human recording.</p>
       <p id="neuralVoiceStatus" class="neural-status">Checking the secure voice connection…</p>
       <div class="neural-settings">
         <label>Style
@@ -120,6 +121,7 @@
     `;
 
     readerMain.insertBefore(panel, readerText);
+    collapseIphoneFallback(readerMain);
 
     activeAudio = document.querySelector("#neuralAudio");
     document.querySelector("#neuralPreset").value = settings.preset;
@@ -151,7 +153,10 @@
       .neural-reader-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
       .neural-reader-heading h3{margin:0}
       .neural-badge{border:1px solid var(--line);border-radius:999px;padding:5px 9px;color:var(--muted);font-size:.75rem}
-      .neural-status,.neural-section,.neural-advanced p{color:var(--muted);line-height:1.45}
+      .neural-status,.neural-section,.neural-advanced p,.neural-disclosure{color:var(--muted);line-height:1.45}
+      .neural-disclosure{font-size:.82rem;margin:.45rem 0}
+      .iphone-fallback{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:10px;background:rgba(255,255,255,.03)}
+      .iphone-fallback summary{cursor:pointer;font-weight:700;color:var(--muted)}
       .neural-settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}
       .neural-settings label,.neural-advanced label{display:grid;gap:6px;font-size:.84rem;color:var(--muted)}
       .neural-controls,.neural-connection-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
@@ -164,6 +169,23 @@
       @media(max-width:600px){.neural-settings{grid-template-columns:1fr}.neural-controls button{flex:1 1 45%}}
     `;
     document.head.appendChild(style);
+  }
+
+  function collapseIphoneFallback(readerMain) {
+    if (readerMain.querySelector(".iphone-fallback")) return;
+    const controls = readerMain.querySelector(".controls");
+    const settings = readerMain.querySelector(".settings-row");
+    const status = readerMain.querySelector("#readerStatus");
+    if (!controls) return;
+    const details = document.createElement("details");
+    details.className = "iphone-fallback";
+    const summary = document.createElement("summary");
+    summary.textContent = "iPhone Samantha fallback — use only if neural voice is unavailable";
+    details.appendChild(summary);
+    controls.before(details);
+    details.appendChild(controls);
+    if (settings) details.appendChild(settings);
+    if (status) details.appendChild(status);
   }
 
   function loadSettings() {
@@ -236,7 +258,7 @@
       let body = {};
       try { body = await response.json(); } catch {}
       if (response.ok && body.configured) {
-        setStatus("Neural voice is connected. Add a reading and press Generate & Play.");
+        setStatus("Bella-style AI voice is connected. Add a reading and press Generate & Play.");
       } else if (body && body.configured === false) {
         setStatus("The Cloudflare voice function is installed, but OPENAI_API_KEY still needs to be added as a secure environment variable.");
       } else {
