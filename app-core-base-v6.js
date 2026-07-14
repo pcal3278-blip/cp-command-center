@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "7.2.3";
+const VERSION = "7.3.0";
 const BUILD_DATE = "2026-07-14";
 const STORE_KEY = "cpCommandCenter.v6.1";
 const LEGACY_KEYS = ["cpCommandCenter.v5.2", "cpCommandCenter.v5.1", "fuelHistory"];
@@ -24,7 +24,9 @@ const defaultState = {
   readings: [],
   currentReadingId: null,
   readerPosition: 0,
-  readerRate: "0.96",
+  readerRate: "0.93",
+  readerEngine: "auto",
+  readerNeuralVoice: "af_bella",
   readerVoice: "",
   fuel: [],
   maintenance: [],
