@@ -1,7 +1,7 @@
 "use strict";
 
-const VERSION = "6.1.0";
-const BUILD_DATE = "2026-07-11";
+const VERSION = "7.1.0";
+const BUILD_DATE = "2026-07-14";
 const STORE_KEY = "cpCommandCenter.v6.1";
 const LEGACY_KEYS = ["cpCommandCenter.v5.2", "cpCommandCenter.v5.1", "fuelHistory"];
 const VEHICLES = ["2021 Chevy Silverado RST", "2007 Honda Civic"];
