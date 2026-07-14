@@ -1,4 +1,17 @@
 let readerVoiceNeedsDeviceReset = false;
+let neuralTtsPromise = null;
+let neuralAudio = null;
+let neuralAudioUrl = "";
+let neuralRunId = 0;
+let neuralNextAudio = null;
+let neuralReady = false;
+let neuralAudioUnlocked = false;
+const NEURAL_MODULE_URL = "https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js";
+const NEURAL_VOICES = [
+  { id: "af_bella", name: "Bella — warm and expressive" },
+  { id: "af_heart", name: "Heart — clear and natural" },
+  { id: "af_nicole", name: "Nicole — calm narration" }
+];
 
 function bindFuel() {
   $("#fuelDate").value = todayYmd();
@@ -167,29 +180,45 @@ function bindReader() {
   $("#readerTitle").value = state.fields.readerTitle || "";
   const freeReaderNeedsReset = localStorage.getItem("cpCommandCenter.freeReaderBuild") !== VERSION;
   readerVoiceNeedsDeviceReset = freeReaderNeedsReset;
-  if (freeReaderNeedsReset) state.readerRate = "0.96";
-  $("#readerRate").value = state.readerRate || "0.96";
+  if (freeReaderNeedsReset) {
+    state.readerRate = "0.93";
+    state.readerEngine = isAppleMobileDevice() ? "neural" : "system";
+    state.readerNeuralVoice = "af_bella";
+    state.readerVoice = "";
+  }
+  if (!['neural', 'system'].includes(state.readerEngine)) state.readerEngine = isAppleMobileDevice() ? "neural" : "system";
+  $("#readerEngine").value = state.readerEngine;
+  $("#readerRate").value = state.readerRate || "0.93";
   $("#readerLarge").checked = Boolean(state.fields.readerLarge);
   updateReaderClass();
   updateReaderChunks();
 
   $("#readerText").addEventListener("input", event => { state.fields.readerText = event.target.value; updateReaderChunks(); saveState(); renderDashboard(); });
   $("#readerTitle").addEventListener("input", event => { state.fields.readerTitle = event.target.value; saveState(); renderDashboard(); });
+  $("#readerEngine").addEventListener("change", event => { stopReader(); state.readerEngine = event.target.value; renderReaderVoiceOptions(); saveState(); });
   $("#readerRate").addEventListener("change", event => { state.readerRate = event.target.value; saveState(); });
-  $("#readerVoice").addEventListener("change", event => { state.readerVoice = event.target.value; saveState(); });
+  $("#readerVoice").addEventListener("change", event => {
+    if (state.readerEngine === "neural") state.readerNeuralVoice = event.target.value;
+    else state.readerVoice = event.target.value;
+    saveState();
+  });
   $("#readerLarge").addEventListener("change", event => { state.fields.readerLarge = event.target.checked; updateReaderClass(); saveState(); });
-  $("#readerPlay").addEventListener("click", () => speakReader(readerIndex));
-  $("#readerPause").addEventListener("click", () => { window.speechSynthesis?.pause(); setText("#readerStatus", "Paused."); });
-  $("#readerResume").addEventListener("click", () => { window.speechSynthesis?.resume(); setText("#readerStatus", "Resumed."); });
+  $("#readerPlay").addEventListener("click", async () => { await unlockNeuralAudio(); speakReader(readerIndex); });
+  $("#readerTestVoice").addEventListener("click", async () => { await unlockNeuralAudio(); testReaderVoice(); });
+  $("#readerPause").addEventListener("click", pauseReader);
+  $("#readerResume").addEventListener("click", resumeReader);
   $("#readerStop").addEventListener("click", stopReader);
-  $("#readerRestart").addEventListener("click", () => { readerIndex = 0; state.readerPosition = 0; saveState(); speakReader(0); });
+  $("#readerRestart").addEventListener("click", async () => { await unlockNeuralAudio(); readerIndex = 0; state.readerPosition = 0; saveState(); speakReader(0); });
   $("#readerImport").addEventListener("change", importReaderText);
   $("#saveReading").addEventListener("click", saveReading);
   $("#favoriteReading").addEventListener("click", toggleReadingFavorite);
   $("#newReading").addEventListener("click", newReading);
   window.speechSynthesis?.addEventListener("voiceschanged", loadReaderVoices);
   loadReaderVoices();
+  renderReaderVoiceOptions();
   renderReaderCategories();
+  localStorage.setItem("cpCommandCenter.freeReaderBuild", VERSION);
+  saveState();
 }
 
 const readerCategoryPrompts = {
@@ -233,18 +262,40 @@ function chunkText(text) {
     const sentences = paragraph.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [paragraph];
     let buffer = "";
     for (const sentence of sentences) {
-      if ((buffer + " " + sentence).length > 520 && buffer) { result.push(buffer.trim()); buffer = sentence.trim(); }
-      else buffer += ` ${sentence.trim()}`;
+      const pieces = splitLongReaderSentence(sentence.trim(), 340);
+      for (const piece of pieces) {
+        if ((buffer + " " + piece).length > 340 && buffer) { result.push(buffer.trim()); buffer = piece; }
+        else buffer += ` ${piece}`;
+      }
     }
     if (buffer.trim()) result.push(buffer.trim());
   }
   return result;
 }
 
+function splitLongReaderSentence(sentence, maxLength) {
+  if (sentence.length <= maxLength) return [sentence];
+  const words = sentence.split(/\s+/);
+  const pieces = [];
+  let buffer = "";
+  for (const word of words) {
+    if ((buffer + " " + word).trim().length > maxLength && buffer) { pieces.push(buffer.trim()); buffer = word; }
+    else buffer += ` ${word}`;
+  }
+  if (buffer.trim()) pieces.push(buffer.trim());
+  return pieces;
+}
+
 function speakReader(index) {
+  if (state.readerEngine === "neural") { speakNeuralReader(index); return; }
+  speakSystemReader(index);
+}
+
+function speakSystemReader(index) {
   if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { showToast("Speech is not available in this browser."); return; }
   updateReaderChunks();
   if (!readerChunks.length) { showToast("Add text to the Reader first."); return; }
+  stopNeuralAudio(false);
   window.speechSynthesis.cancel();
   readerIndex = Math.max(0, Math.min(index, readerChunks.length - 1));
   state.readerPosition = readerIndex; saveState(); updateReaderChunks();
@@ -256,7 +307,7 @@ function speakReader(index) {
   activeUtterance.onend = () => {
     if (readerIndex < readerChunks.length - 1) {
       readerIndex += 1; state.readerPosition = readerIndex; saveState(); updateReaderChunks();
-      setTimeout(() => speakReader(readerIndex), 35);
+      setTimeout(() => speakSystemReader(readerIndex), 35);
     } else {
       $("#readerProgress").value = 100; setText("#readerStatus", "Reading complete."); saveReadingHistory();
     }
@@ -265,29 +316,230 @@ function speakReader(index) {
   window.speechSynthesis.speak(activeUtterance);
 }
 
-function stopReader() { window.speechSynthesis?.cancel(); setText("#readerStatus", `Stopped at section ${readerIndex + 1}. Position saved.`); state.readerPosition = readerIndex; saveState(); }
-function loadReaderVoices() {
-  readerVoices = window.speechSynthesis?.getVoices().filter(v => /^en/i.test(v.lang)) || [];
-  const select = $("#readerVoice");
-  if (!readerVoices.length) {
-    select.innerHTML = "<option>Waiting for iPhone voices…</option>";
+async function speakNeuralReader(index) {
+  updateReaderChunks();
+  if (!readerChunks.length) { showToast("Add text to the Reader first."); return; }
+  window.speechSynthesis?.cancel();
+  stopNeuralAudio(false);
+  const runId = ++neuralRunId;
+  readerIndex = Math.max(0, Math.min(index, readerChunks.length - 1));
+  state.readerPosition = readerIndex; saveState(); updateReaderChunks();
+  try {
+    const tts = await getNeuralTts();
+    if (runId !== neuralRunId) return;
+    setText("#readerStatus", `Preparing Bella, section ${readerIndex + 1}…`);
+    const audio = await generateNeuralAudio(tts, readerChunks[readerIndex]);
+    if (runId !== neuralRunId) return;
+    await playNeuralAudio(audio, runId, tts);
+  } catch (error) {
+    console.error("Neural Reader error", error);
+    if (runId !== neuralRunId) return;
+    setText("#readerStatus", navigator.onLine
+      ? "Neural voice could not start. Close and reopen the app, then tap Test voice."
+      : "Neural voice needs its one-time download. Reconnect, then tap Test voice.");
+    showToast("Neural voice did not load. Your reading position is saved.", 7000);
+  }
+}
+
+async function getNeuralTts() {
+  if (neuralTtsPromise) return neuralTtsPromise;
+  setText("#readerStatus", "Loading the free neural reader…");
+  neuralTtsPromise = import(NEURAL_MODULE_URL)
+    .then(({ KokoroTTS }) => KokoroTTS.from_pretrained("onnx-community/Kokoro-82M-v1.0-ONNX", {
+      dtype: "q8",
+      device: "wasm",
+      progress_callback: updateNeuralDownloadProgress
+    }))
+    .then(tts => {
+      neuralReady = true;
+      $("#readerDownloadNote")?.classList.add("hidden");
+      setText("#readerStatus", "Free neural voice ready.");
+      return tts;
+    })
+    .catch(error => { neuralTtsPromise = null; throw error; });
+  return neuralTtsPromise;
+}
+
+function updateNeuralDownloadProgress(event) {
+  if (event?.status === "progress" && Number.isFinite(event.progress)) {
+    const percent = Math.max(0, Math.min(100, Math.round(event.progress)));
+    setText("#readerStatus", `Downloading free neural voice: ${percent}% — keep this screen open.`);
+  } else if (event?.status === "initiate") {
+    setText("#readerStatus", "Starting the one-time neural voice download…");
+  }
+}
+
+function generateNeuralAudio(tts, text) {
+  return tts.generate(text, {
+    voice: state.readerNeuralVoice || "af_bella",
+    speed: Number($("#readerRate").value || 0.93)
+  });
+}
+
+async function playNeuralAudio(rawAudio, runId, tts) {
+  if (!neuralAudio) neuralAudio = new Audio();
+  releaseNeuralAudioUrl();
+  neuralAudioUrl = URL.createObjectURL(rawAudio.toBlob());
+  neuralAudio.src = neuralAudioUrl;
+  neuralAudio.volume = 1;
+  neuralAudio.playbackRate = 1;
+  neuralAudio.playsInline = true;
+  neuralNextAudio = readerIndex < readerChunks.length - 1
+    ? generateNeuralAudio(tts, readerChunks[readerIndex + 1]).catch(() => null)
+    : null;
+  neuralAudio.onplay = () => setText("#readerStatus", `Playing neural voice, section ${readerIndex + 1}.`);
+  neuralAudio.onended = async () => {
+    if (runId !== neuralRunId) return;
+    releaseNeuralAudioUrl();
+    if (readerIndex < readerChunks.length - 1) {
+      readerIndex += 1; state.readerPosition = readerIndex; saveState(); updateReaderChunks();
+      setText("#readerStatus", `Preparing section ${readerIndex + 1}…`);
+      const next = await neuralNextAudio;
+      if (runId !== neuralRunId) return;
+      try {
+        await playNeuralAudio(next || await generateNeuralAudio(tts, readerChunks[readerIndex]), runId, tts);
+      } catch (error) {
+        console.error(error); setText("#readerStatus", "Neural playback stopped. Tap Play to continue.");
+      }
+    } else {
+      $("#readerProgress").value = 100; setText("#readerStatus", "Reading complete."); saveReadingHistory();
+    }
+  };
+  neuralAudio.onerror = () => { if (runId === neuralRunId) setText("#readerStatus", "Audio playback stopped. Tap Play to continue."); };
+  await neuralAudio.play();
+}
+
+async function unlockNeuralAudio() {
+  if (state.readerEngine !== "neural" || neuralAudioUnlocked) return;
+  if (!neuralAudio) neuralAudio = new Audio();
+  neuralAudio.playsInline = true;
+  neuralAudio.preload = "auto";
+  neuralAudio.volume = 0;
+  neuralAudio.src = "data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICA";
+  try {
+    await neuralAudio.play();
+    neuralAudio.pause();
+    neuralAudio.removeAttribute("src");
+    neuralAudio.load();
+    neuralAudioUnlocked = true;
+  } catch (error) {
+    console.warn("iPhone audio unlock will retry at playback", error);
+  } finally {
+    neuralAudio.volume = 1;
+  }
+}
+
+function pauseReader() {
+  if (state.readerEngine === "neural" && neuralAudio && !neuralAudio.paused) neuralAudio.pause();
+  else window.speechSynthesis?.pause();
+  setText("#readerStatus", "Paused.");
+}
+
+function resumeReader() {
+  if (state.readerEngine === "neural" && neuralAudio?.src) neuralAudio.play().catch(() => setText("#readerStatus", "Tap Play to continue."));
+  else window.speechSynthesis?.resume();
+  setText("#readerStatus", "Resumed.");
+}
+
+function stopNeuralAudio(incrementRun = true) {
+  if (incrementRun) neuralRunId += 1;
+  neuralNextAudio = null;
+  if (neuralAudio) { neuralAudio.pause(); neuralAudio.removeAttribute("src"); neuralAudio.load(); }
+  releaseNeuralAudioUrl();
+}
+
+function releaseNeuralAudioUrl() {
+  if (!neuralAudioUrl) return;
+  URL.revokeObjectURL(neuralAudioUrl);
+  neuralAudioUrl = "";
+}
+
+function stopReader() {
+  neuralRunId += 1;
+  stopNeuralAudio(false);
+  window.speechSynthesis?.cancel();
+  setText("#readerStatus", `Stopped at section ${readerIndex + 1}. Position saved.`);
+  state.readerPosition = readerIndex; saveState();
+}
+
+async function testReaderVoice() {
+  stopReader();
+  const sample = "Good afternoon. This is the new CP neural reader. The voice should sound clear, warm, and natural, without the crackling system speech.";
+  if (state.readerEngine === "system") {
+    const utterance = new SpeechSynthesisUtterance(sample);
+    utterance.rate = Number($("#readerRate").value || 0.93);
+    utterance.voice = readerVoices.find(voice => voice.name === $("#readerVoice").value) || null;
+    setText("#readerStatus", "Playing system voice test.");
+    window.speechSynthesis.speak(utterance);
     return;
   }
-  const isIPhoneOrIPad = /iPhone|iPad|iPod/i.test(navigator.userAgent)
-    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const runId = ++neuralRunId;
+  try {
+    const tts = await getNeuralTts();
+    const audio = await generateNeuralAudio(tts, sample);
+    if (runId !== neuralRunId) return;
+    await playNeuralPreview(audio, runId);
+  } catch (error) {
+    console.error(error);
+    setText("#readerStatus", navigator.onLine ? "Neural test could not start. Close and reopen the app, then try once more." : "Reconnect to finish the one-time neural voice download.");
+  }
+}
+
+async function playNeuralPreview(rawAudio, runId) {
+  if (!neuralAudio) neuralAudio = new Audio();
+  releaseNeuralAudioUrl();
+  neuralAudioUrl = URL.createObjectURL(rawAudio.toBlob());
+  neuralAudio.src = neuralAudioUrl;
+  neuralAudio.volume = 1;
+  neuralAudio.playsInline = true;
+  neuralAudio.onplay = () => setText("#readerStatus", "Playing free neural voice test.");
+  neuralAudio.onended = () => { if (runId === neuralRunId) setText("#readerStatus", "Voice test complete. Tap Play for your reading."); releaseNeuralAudioUrl(); };
+  await neuralAudio.play();
+}
+
+function loadReaderVoices() {
+  readerVoices = window.speechSynthesis?.getVoices().filter(v => /^en/i.test(v.lang)) || [];
+  if (!readerVoices.length) {
+    renderReaderVoiceOptions();
+    return;
+  }
+  const isIPhoneOrIPad = isAppleMobileDevice();
   const allison = readerVoices.find(voice => /^Allison/i.test(voice.name) && /^en[-_]US/i.test(voice.lang)) || null;
   const samantha = readerVoices.find(voice => /^Samantha$/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
     || readerVoices.find(voice => /Samantha/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
     || null;
   const deviceVoice = isIPhoneOrIPad ? (samantha || allison) : (allison || samantha);
-  select.innerHTML = readerVoices.length ? readerVoices.map(voice => `<option value="${escapeHtml(voice.name)}">${voice === deviceVoice ? "Recommended for this device • " : ""}${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`).join("") : "<option>Default system voice</option>";
   const settingsAreCurrent = !readerVoiceNeedsDeviceReset && localStorage.getItem("cpCommandCenter.freeReaderBuild") === VERSION;
   const savedVoice = settingsAreCurrent && state.readerVoice && readerVoices.some(voice => voice.name === state.readerVoice) ? state.readerVoice : "";
   const preferred = savedVoice || deviceVoice?.name || readerVoices[0]?.name || "";
-  if (preferred) { select.value = preferred; state.readerVoice = preferred; }
+  if (preferred) state.readerVoice = preferred;
   readerVoiceNeedsDeviceReset = false;
   localStorage.setItem("cpCommandCenter.freeReaderBuild", VERSION);
+  renderReaderVoiceOptions();
   saveState();
+}
+
+function isAppleMobileDevice() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function renderReaderVoiceOptions() {
+  const select = $("#readerVoice");
+  if (!select) return;
+  const isNeural = state.readerEngine === "neural";
+  if (isNeural) {
+    select.innerHTML = NEURAL_VOICES.map(voice => `<option value="${voice.id}">${escapeHtml(voice.name)}</option>`).join("");
+    select.value = NEURAL_VOICES.some(voice => voice.id === state.readerNeuralVoice) ? state.readerNeuralVoice : "af_bella";
+    state.readerNeuralVoice = select.value;
+    $("#readerDownloadNote")?.classList.toggle("hidden", neuralReady);
+  } else {
+    select.innerHTML = readerVoices.length
+      ? readerVoices.map(voice => `<option value="${escapeHtml(voice.name)}">${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`).join("")
+      : "<option>Waiting for iPhone voices…</option>";
+    if (readerVoices.some(voice => voice.name === state.readerVoice)) select.value = state.readerVoice;
+    $("#readerDownloadNote")?.classList.add("hidden");
+  }
 }
 
 function importReaderText(event) {
