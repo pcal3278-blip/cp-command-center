@@ -1,7 +1,7 @@
 const CACHE_NAME = "cp-command-center-7.3.0-neural-reader";
 const APP_SHELL = [
   "./",
-  "./styles-v6.css?v=6.1.0",
+  "./styles-v6.css?v=7.3.0",
   "./app-core-base-v6.js?v=7.3.0",
   "./app-core-ui-v6.js?v=6.1.0",
   "./app-data-v6.js?v=7.3.0",
