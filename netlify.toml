@@ -1,22 +1,5 @@
 [build]
   publish = "."
-  functions = "netlify/functions"
-
-[functions]
-  node_bundler = "esbuild"
-
-[[redirects]]
-  from = "/api/tts"
-  to = "/.netlify/functions/tts"
-  status = 200
-  force = true
-
-[[headers]]
-  for = "/api/tts"
-  [headers.values]
-    Cache-Control = "no-store"
-    X-Content-Type-Options = "nosniff"
-
 [[headers]]
   for = "/*.js"
   [headers.values]
