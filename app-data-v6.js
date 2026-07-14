@@ -164,8 +164,8 @@ function bindReader() {
   $("#readerText").value = state.fields.readerText || "";
   $("#readerTitle").value = state.fields.readerTitle || "";
   const freeReaderNeedsReset = localStorage.getItem("cpCommandCenter.freeReaderBuild") !== VERSION;
-  if (freeReaderNeedsReset) state.readerRate = "0.93";
-  $("#readerRate").value = state.readerRate || "0.93";
+  if (freeReaderNeedsReset) state.readerRate = "0.96";
+  $("#readerRate").value = state.readerRate || "0.96";
   $("#readerLarge").checked = Boolean(state.fields.readerLarge);
   updateReaderClass();
   updateReaderChunks();
@@ -246,7 +246,7 @@ function speakReader(index) {
   readerIndex = Math.max(0, Math.min(index, readerChunks.length - 1));
   state.readerPosition = readerIndex; saveState(); updateReaderChunks();
   activeUtterance = new window.SpeechSynthesisUtterance(readerChunks[readerIndex]);
-  activeUtterance.rate = Number($("#readerRate").value || 0.93);
+  activeUtterance.rate = Number($("#readerRate").value || 0.96);
   activeUtterance.pitch = 1.03;
   activeUtterance.voice = readerVoices.find(voice => voice.name === $("#readerVoice").value) || null;
   activeUtterance.onstart = () => setText("#readerStatus", `Playing section ${readerIndex + 1}.`);
@@ -266,13 +266,14 @@ function stopReader() { window.speechSynthesis?.cancel(); setText("#readerStatus
 function loadReaderVoices() {
   readerVoices = window.speechSynthesis?.getVoices().filter(v => /^en/i.test(v.lang)) || [];
   const select = $("#readerVoice");
+  const allison = readerVoices.find(voice => /^Allison/i.test(voice.name) && /^en[-_]US/i.test(voice.lang)) || null;
   const samantha = readerVoices.find(voice => /^Samantha$/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
     || readerVoices.find(voice => /Samantha/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
     || null;
-  select.innerHTML = readerVoices.length ? readerVoices.map(voice => `<option value="${escapeHtml(voice.name)}">${voice === samantha ? "Recommended • " : ""}${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`).join("") : "<option>Default system voice</option>";
+  select.innerHTML = readerVoices.length ? readerVoices.map(voice => `<option value="${escapeHtml(voice.name)}">${voice === allison ? "Recommended • " : ""}${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`).join("") : "<option>Default system voice</option>";
   const settingsAreCurrent = localStorage.getItem("cpCommandCenter.freeReaderBuild") === VERSION;
   const savedVoice = settingsAreCurrent && state.readerVoice && readerVoices.some(voice => voice.name === state.readerVoice) ? state.readerVoice : "";
-  const preferred = savedVoice || samantha?.name || readerVoices[0]?.name || "";
+  const preferred = savedVoice || allison?.name || samantha?.name || readerVoices[0]?.name || "";
   if (preferred) { select.value = preferred; state.readerVoice = preferred; }
   localStorage.setItem("cpCommandCenter.freeReaderBuild", VERSION);
   saveState();

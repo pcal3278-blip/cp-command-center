@@ -8,14 +8,14 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CP Command">
   <meta name="description" content="Paul's private local-first command center for commute, weather, reading, vehicles, maintenance, health, and retirement planning.">
-  <title>CP Command Center 7.2</title>
-  <link rel="manifest" href="manifest-v6.webmanifest?v=7.2.0">
+  <title>CP Command Center 7.2.2</title>
+  <link rel="manifest" href="manifest-v6.webmanifest?v=7.2.2">
   <link rel="icon" href="icon-v6.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-v6.svg">
   <link rel="stylesheet" href="styles-v6.css?v=6.1.0">
 </head>
 <body>
-  <div id="loading" class="loading"><div class="brand-mark">CP</div><div><strong>Command Center</strong><span>Starting 7.2</span></div></div>
+  <div id="loading" class="loading"><div class="brand-mark">CP</div><div><strong>Command Center</strong><span>Starting 7.2.2</span></div></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <div class="app-shell">
@@ -23,7 +23,7 @@
       <div>
         <p class="eyebrow">CP Command Center</p>
         <h1 id="screenTitle">Dashboard</h1>
-        <p class="build-line">Version 7.2.0 · <span id="networkState">Checking network…</span></p>
+        <p class="build-line">Version 7.2.2 · <span id="networkState">Checking network…</span></p>
       </div>
       <button id="themeToggle" class="icon-button" aria-label="Toggle theme">◐</button>
     </header>
@@ -80,7 +80,7 @@
         <div class="reader-toolbar glass"><input id="readerTitle" placeholder="Reading title"><label class="file-button">Import text<input id="readerImport" type="file" accept=".txt,text/plain"></label><button id="saveReading">Save</button><button id="favoriteReading">☆</button><button id="newReading" class="secondary">New</button></div>
         <div class="reader-layout">
           <aside class="card glass reader-library"><h3>Categories</h3><div id="readerCategories" class="category-grid"></div><h3>Saved</h3><div id="readingLibrary"></div></aside>
-          <article class="card glass reader-main"><textarea id="readerText" class="reader-editor" placeholder="Paste a Cast25 report, story, article, or notes here."></textarea><div class="reader-meta"><span id="readerSection">Section 0 of 0</span><span id="readerTime">0 min</span></div><progress id="readerProgress" value="0" max="100"></progress><div class="controls"><button id="readerPlay">▶ Play</button><button id="readerPause" class="secondary">⏸ Pause</button><button id="readerResume" class="secondary">▶ Resume</button><button id="readerStop" class="danger">■ Stop</button><button id="readerRestart" class="secondary">↺ Restart</button></div><div class="settings-row"><label>Speed<select id="readerRate"><option value="0.85">0.85</option><option value="0.9">0.90</option><option value="0.93" selected>0.93</option><option value="0.96">0.96</option><option value="1">1.00</option><option value="1.1">1.10</option></select></label><label>Voice<select id="readerVoice"></select></label><label><input id="readerLarge" type="checkbox"> Large text</label></div><p id="readerStatus" class="muted">Reader ready.</p></article>
+          <article class="card glass reader-main"><textarea id="readerText" class="reader-editor" placeholder="Paste a Cast25 report, story, article, or notes here."></textarea><div class="reader-meta"><span id="readerSection">Section 0 of 0</span><span id="readerTime">0 min</span></div><progress id="readerProgress" value="0" max="100"></progress><div class="controls"><button id="readerPlay">▶ Play</button><button id="readerPause" class="secondary">⏸ Pause</button><button id="readerResume" class="secondary">▶ Resume</button><button id="readerStop" class="danger">■ Stop</button><button id="readerRestart" class="secondary">↺ Restart</button></div><div class="settings-row"><label>Speed<select id="readerRate"><option value="0.85">0.85</option><option value="0.9">0.90</option><option value="0.93">0.93</option><option value="0.96" selected>0.96</option><option value="1">1.00</option><option value="1.1">1.10</option></select></label><label>Voice<select id="readerVoice"></select></label><label><input id="readerLarge" type="checkbox"> Large text</label></div><p id="readerStatus" class="muted">Reader ready.</p></article>
         </div>
       </section>
 
@@ -142,9 +142,9 @@
     </nav>
   </div>
 
-  <script src="app-core-base-v6.js?v=7.2.0" defer></script>
+  <script src="app-core-base-v6.js?v=7.2.2" defer></script>
   <script src="app-core-ui-v6.js?v=6.1.0" defer></script>
-  <script src="app-data-v6.js?v=7.2.0" defer></script>
+  <script src="app-data-v6.js?v=7.2.2" defer></script>
   <script src="app-live-v6.js?v=6.1.0" defer></script>
   <script src="cast25-built-in.js?v=2026-07-11-1" defer></script>
 </body>
