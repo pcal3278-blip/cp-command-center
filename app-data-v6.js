@@ -69,11 +69,15 @@ function calculatedFuel(vehicle) {
   const rows = chronologicalFuel(vehicle);
   return rows.map((entry, index) => {
     const previous = rows[index - 1];
-    const miles = previous ? entry.odometer - previous.odometer : null;
+    const savedPrevious = Number(entry.previousOdometer) > 0 ? Number(entry.previousOdometer) : null;
+    const previousOdometer = previous?.odometer ?? savedPrevious;
+    const savedMiles = Number(entry.milesDriven) > 0 ? Number(entry.milesDriven) : null;
+    const miles = previous ? entry.odometer - previous.odometer : (savedMiles || (previousOdometer ? entry.odometer - previousOdometer : null));
     const mpg = miles && miles > 0 ? miles / entry.gallons : null;
+    const gallonsPer100Miles = miles && miles > 0 ? entry.gallons / miles * 100 : null;
     const costPerMile = miles && miles > 0 ? entry.totalPaid / miles : null;
     const pricePerGallon = entry.gallons ? entry.totalPaid / entry.gallons : null;
-    return { ...entry, previousOdometer: previous?.odometer ?? null, miles, mpg, costPerMile, pricePerGallon };
+    return { ...entry, previousOdometer, miles, mpg, gallonsPer100Miles, costPerMile, pricePerGallon };
   }).sort((a, b) => b.odometer - a.odometer);
 }
 
@@ -91,6 +95,7 @@ function fuelStats(vehicle) {
     rows, completed,
     lastMpg: completed[0]?.mpg || 0,
     averageMpg: lifetime.gallons ? lifetime.miles / lifetime.gallons : 0,
+    gallonsPer100Miles: lifetime.miles ? lifetime.gallons / lifetime.miles * 100 : 0,
     bestMpg: completed.length ? Math.max(...completed.map(row => row.mpg)) : 0,
     worstMpg: completed.length ? Math.min(...completed.map(row => row.mpg)) : 0,
     costPerMile: lifetime.miles ? lifetime.paid / lifetime.miles : 0,
@@ -105,6 +110,7 @@ function renderFuel() {
   const stats = fuelStats(vehicle);
   $("#fuelStats").innerHTML = [
     ["Last MPG", formatNumber(stats.lastMpg, 1)], ["Lifetime MPG", formatNumber(stats.averageMpg, 1)],
+    ["Fuel use / 100 mi", stats.gallonsPer100Miles ? `${formatNumber(stats.gallonsPer100Miles,2)} gal` : "--"],
     ["Best / worst", stats.completed.length ? `${formatNumber(stats.bestMpg,1)} / ${formatNumber(stats.worstMpg,1)}` : "--"],
     ["Cost / mile", stats.costPerMile ? currency(stats.costPerMile, 3) : "--"],
     ["This month", stats.month.miles ? `${formatNumber(stats.month.miles,0)} mi · ${currency(stats.month.paid)}` : "--"],
@@ -112,7 +118,7 @@ function renderFuel() {
     ["Total spent", currency(stats.totalPaid)], ["Fill-ups", String(stats.rows.length)]
   ].map(([label, value]) => statTile(label, value)).join("");
 
-  $("#fuelHistory").innerHTML = stats.rows.length ? `<table class="data-table"><thead><tr><th>Date</th><th>Odometer</th><th>Miles</th><th>Gallons</th><th>Paid</th><th>$/gal</th><th>MPG</th><th>$/mile</th><th>Actions</th></tr></thead><tbody>${stats.rows.map(row => `<tr><td>${escapeHtml(row.date)}</td><td>${formatNumber(row.odometer,1)}</td><td>${row.miles ? formatNumber(row.miles,1) : "Initial"}</td><td>${formatNumber(row.gallons,3)}</td><td>${currency(row.totalPaid)}</td><td>${currency(row.pricePerGallon,3)}</td><td>${row.mpg ? formatNumber(row.mpg,1) : "--"}</td><td>${row.costPerMile ? currency(row.costPerMile,3) : "--"}</td><td><div class="row-actions"><button data-fuel-edit="${row.id}" class="secondary">Edit</button><button data-fuel-delete="${row.id}" class="danger">Delete</button></div></td></tr>`).join("")}</tbody></table>` : "<p>No fuel entries for this vehicle.</p>";
+  $("#fuelHistory").innerHTML = stats.rows.length ? `<table class="data-table"><thead><tr><th>Date</th><th>Odometer</th><th>Miles</th><th>Gallons</th><th>Paid</th><th>$/gal</th><th>MPG</th><th>Gal/100 mi</th><th>$/mile</th><th>Actions</th></tr></thead><tbody>${stats.rows.map(row => `<tr><td>${escapeHtml(row.date)}</td><td>${formatNumber(row.odometer,1)}</td><td>${row.miles ? formatNumber(row.miles,1) : "Initial"}</td><td>${formatNumber(row.gallons,3)}</td><td>${currency(row.totalPaid)}</td><td>${currency(row.pricePerGallon,3)}</td><td>${row.mpg ? formatNumber(row.mpg,1) : "--"}</td><td>${row.gallonsPer100Miles ? formatNumber(row.gallonsPer100Miles,2) : "--"}</td><td>${row.costPerMile ? currency(row.costPerMile,3) : "--"}</td><td><div class="row-actions"><button data-fuel-edit="${row.id}" class="secondary">Edit</button><button data-fuel-delete="${row.id}" class="danger">Delete</button></div></td></tr>`).join("")}</tbody></table>` : "<p>No fuel entries for this vehicle.</p>";
   $$('[data-fuel-edit]').forEach(button => button.addEventListener("click", () => editFuel(button.dataset.fuelEdit)));
   $$('[data-fuel-delete]').forEach(button => button.addEventListener("click", () => deleteFuel(button.dataset.fuelDelete)));
 }
@@ -163,8 +169,8 @@ function duplicateFuelDraft() {
 
 function exportFuelCsv() {
   const rows = VEHICLES.flatMap(vehicle => calculatedFuel(vehicle));
-  const header = ["date","vehicle","previous_odometer","current_odometer","miles_driven","gallons","total_paid","price_per_gallon","mpg","cost_per_mile"];
-  const lines = [header.join(","), ...rows.map(row => [row.date,row.vehicle,row.previousOdometer ?? "",row.odometer,row.miles ?? "",row.gallons,row.totalPaid,row.pricePerGallon ?? "",row.mpg ?? "",row.costPerMile ?? ""].map(csvCell).join(","))];
+  const header = ["date","vehicle","previous_odometer","current_odometer","miles_driven","gallons","total_paid","price_per_gallon","mpg","gallons_per_100_miles","cost_per_mile"];
+  const lines = [header.join(","), ...rows.map(row => [row.date,row.vehicle,row.previousOdometer ?? "",row.odometer,row.miles ?? "",row.gallons,row.totalPaid,row.pricePerGallon ?? "",row.mpg ?? "",row.gallonsPer100Miles ?? "",row.costPerMile ?? ""].map(csvCell).join(","))];
   downloadText("cp-fuel-history.csv", lines.join("\n"), "text/csv");
 }
 
