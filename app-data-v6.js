@@ -1,4 +1,5 @@
 let readerVoiceNeedsDeviceReset = false;
+let systemSpeechRunId = 0;
 let neuralTtsPromise = null;
 let neuralAudio = null;
 let neuralAudioUrl = "";
@@ -302,14 +303,16 @@ function speakReader(index) {
   speakSystemReader(index);
 }
 
-function speakSystemReader(index, continuation = false) {
+function speakSystemReader(index, continuation = false, runId = null) {
   if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { showToast("Speech is not available in this browser."); return; }
   updateReaderChunks();
   if (!readerChunks.length) { showToast("Add text to the Reader first."); return; }
   if (!continuation) {
+    runId = ++systemSpeechRunId;
     stopNeuralAudio(false);
     window.speechSynthesis.cancel();
   }
+  if (runId !== systemSpeechRunId) return;
   readerIndex = Math.max(0, Math.min(index, readerChunks.length - 1));
   state.readerPosition = readerIndex; saveState(); updateReaderChunks();
   activeUtterance = new window.SpeechSynthesisUtterance(readerChunks[readerIndex]);
@@ -321,7 +324,7 @@ function speakSystemReader(index, continuation = false) {
   activeUtterance.onend = () => {
     if (readerIndex < readerChunks.length - 1) {
       readerIndex += 1; state.readerPosition = readerIndex; saveState(); updateReaderChunks();
-      setTimeout(() => speakSystemReader(readerIndex, true), 110);
+      setTimeout(() => speakSystemReader(readerIndex, true, runId), 110);
     } else {
       $("#readerProgress").value = 100; setText("#readerStatus", "Reading complete."); saveReadingHistory();
     }
@@ -331,7 +334,9 @@ function speakSystemReader(index, continuation = false) {
       setText("#readerStatus", `Speech stopped at section ${readerIndex + 1}. Tap Play to continue. (${event.error})`);
     }
   };
-  const start = () => window.speechSynthesis.speak(activeUtterance);
+  const start = () => {
+    if (runId === systemSpeechRunId) window.speechSynthesis.speak(activeUtterance);
+  };
   if (continuation) start();
   else setTimeout(start, 120);
 }
@@ -475,6 +480,7 @@ function releaseNeuralAudioUrl() {
 }
 
 function stopReader() {
+  systemSpeechRunId += 1;
   neuralRunId += 1;
   stopNeuralAudio(false);
   window.speechSynthesis?.cancel();
@@ -486,14 +492,16 @@ async function testReaderVoice() {
   stopReader();
   const sample = "Good afternoon. This is the new CP neural reader. The voice should sound clear, warm, and natural, without the crackling system speech.";
   if (state.readerEngine === "system") {
+    const runId = ++systemSpeechRunId;
     await new Promise(resolve => setTimeout(resolve, 140));
+    if (runId !== systemSpeechRunId) return;
     const utterance = new SpeechSynthesisUtterance(sample);
     utterance.rate = Number($("#readerRate").value || 0.93);
     utterance.voice = readerVoices.find(voice => voice.name === $("#readerVoice").value) || null;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
     setText("#readerStatus", `Testing ${utterance.voice?.name || "the iPhone voice"}.`);
-    window.speechSynthesis.speak(utterance);
+    if (runId === systemSpeechRunId) window.speechSynthesis.speak(utterance);
     return;
   }
   const runId = ++neuralRunId;
