@@ -13,7 +13,7 @@ const LEGACY_KEYS = [
   "cp_mpg",
   "fuelHistory"
 ];
-const FUEL_MIGRATION_KEY = "cpCommandCenter.fuelMigration.2026-07-15";
+const FUEL_MIGRATION_KEY = "cpCommandCenter.fuelMigration.2026-07-15-v2";
 const VEHICLES = ["2021 Chevy Silverado RST", "2007 Honda Civic"];
 const LOCATIONS = {
   westBabylon: { name: "West Babylon", latitude: 40.7182, longitude: -73.3543 },
@@ -162,21 +162,22 @@ function normalizeFuel(items) {
 
     const date = normalizeDate(item.date || item.dateFueled || item.fueledAt || item.created);
     const previousOdometer = numberOr(item.previousOdometer, item.previous, item.lastMileage);
-    const milesDriven = numberOr(item.milesDriven, item.miles);
+    const savedMpg = numberOr(item.mpg);
+    const milesDriven = numberOr(item.milesDriven, item.miles, savedMpg && gallons ? savedMpg * gallons : 0);
     const id = String(item.id || uid());
     const key = `${vehicle}|${date}|${odometer}|${gallons}|${totalPaid}`;
     if (seen.has(key)) return null;
     seen.add(key);
 
     return {
-      id, vehicle, date, odometer, gallons, totalPaid,
+      id, vehicle, date, odometer: odometer || null, gallons, totalPaid,
       previousOdometer: previousOdometer || null,
       milesDriven: milesDriven || null,
       station: item.station || item.location || "",
       notes: item.notes || item.note || "",
       created: item.created || new Date().toISOString()
     };
-  }).filter(item => item && item.odometer > 0 && item.gallons > 0 && item.totalPaid >= 0);
+  }).filter(item => item && (item.odometer > 0 || item.milesDriven > 0) && item.gallons > 0 && item.totalPaid >= 0);
 }
 
 function saveState() {
