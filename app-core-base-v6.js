@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "7.3.1";
+const VERSION = "7.3.2";
 const BUILD_DATE = "2026-07-15";
 const STORE_KEY = "cpCommandCenter.v6.1";
 const LEGACY_KEYS = ["cpCommandCenter.v5.2", "cpCommandCenter.v5.1", "fuelHistory"];

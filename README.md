@@ -1,6 +1,6 @@
 # CP Command Center
 
-Version 7.3.1 — local-first dashboard for commute, weather, news, Reader playback, MPG/fuel tracking, maintenance, health logs, and retirement snapshots.
+Version 7.3.2 — local-first dashboard for commute, weather, news, Reader playback, MPG/fuel tracking, maintenance, health logs, and retirement snapshots.
 
 Live GitHub Pages site: https://pcal3278-blip.github.io/cp-command-center/
 

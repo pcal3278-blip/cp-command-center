@@ -193,10 +193,12 @@ function bindReader() {
   if (isAppleMobileDevice()) {
     state.readerEngine = "system";
     const neuralOption = $('#readerEngine option[value="neural"]');
+    const systemOption = $('#readerEngine option[value="system"]');
     if (neuralOption) {
       neuralOption.disabled = true;
       neuralOption.textContent = "Desktop neural — not supported on iPhone";
     }
+    if (systemOption) systemOption.textContent = "iPhone Reader — reliable";
   }
   $("#readerEngine").value = state.readerEngine;
   $("#readerRate").value = state.readerRate || "0.93";
@@ -490,7 +492,9 @@ function stopReader() {
 
 async function testReaderVoice() {
   stopReader();
-  const sample = "Good afternoon. This is the new CP neural reader. The voice should sound clear, warm, and natural, without the crackling system speech.";
+  const sample = state.readerEngine === "system"
+    ? "Good afternoon. This is the CP iPhone Reader. The voice should sound clear and steady, and the reading should continue smoothly from section to section."
+    : "Good afternoon. This is the CP desktop neural reader. The voice should sound clear, warm, and natural.";
   if (state.readerEngine === "system") {
     const runId = ++systemSpeechRunId;
     await new Promise(resolve => setTimeout(resolve, 140));
