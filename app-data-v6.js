@@ -1,4 +1,5 @@
 let readerVoiceNeedsDeviceReset = false;
+let systemSpeechRunId = 0;
 let neuralTtsPromise = null;
 let neuralAudio = null;
 let neuralAudioUrl = "";
@@ -7,6 +8,8 @@ let neuralNextAudio = null;
 let neuralReady = false;
 let neuralAudioUnlocked = false;
 const NEURAL_MODULE_URL = "https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js";
+const READER_SETTINGS_SCHEMA = "ios-stable-v1";
+const NOVELTY_VOICE_PATTERN = /Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox/i;
 const NEURAL_VOICES = [
   { id: "af_bella", name: "Bella — warm and expressive" },
   { id: "af_heart", name: "Heart — clear and natural" },
@@ -178,15 +181,23 @@ function importFuelJson(event) {
 function bindReader() {
   $("#readerText").value = state.fields.readerText || "";
   $("#readerTitle").value = state.fields.readerTitle || "";
-  const freeReaderNeedsReset = localStorage.getItem("cpCommandCenter.freeReaderBuild") !== VERSION;
-  readerVoiceNeedsDeviceReset = freeReaderNeedsReset;
-  if (freeReaderNeedsReset) {
+  const readerSettingsNeedReset = localStorage.getItem("cpCommandCenter.readerSettingsSchema") !== READER_SETTINGS_SCHEMA;
+  readerVoiceNeedsDeviceReset = readerSettingsNeedReset;
+  if (readerSettingsNeedReset) {
     state.readerRate = "0.93";
-    state.readerEngine = isAppleMobileDevice() ? "neural" : "system";
+    state.readerEngine = isAppleMobileDevice() ? "system" : "neural";
     state.readerNeuralVoice = "af_bella";
     state.readerVoice = "";
   }
-  if (!['neural', 'system'].includes(state.readerEngine)) state.readerEngine = isAppleMobileDevice() ? "neural" : "system";
+  if (!["neural", "system"].includes(state.readerEngine)) state.readerEngine = isAppleMobileDevice() ? "system" : "neural";
+  if (isAppleMobileDevice()) {
+    state.readerEngine = "system";
+    const neuralOption = $('#readerEngine option[value="neural"]');
+    if (neuralOption) {
+      neuralOption.disabled = true;
+      neuralOption.textContent = "Desktop neural — not supported on iPhone";
+    }
+  }
   $("#readerEngine").value = state.readerEngine;
   $("#readerRate").value = state.readerRate || "0.93";
   $("#readerLarge").checked = Boolean(state.fields.readerLarge);
@@ -217,7 +228,8 @@ function bindReader() {
   loadReaderVoices();
   renderReaderVoiceOptions();
   renderReaderCategories();
-  localStorage.setItem("cpCommandCenter.freeReaderBuild", VERSION);
+  localStorage.setItem("cpCommandCenter.readerSettingsSchema", READER_SETTINGS_SCHEMA);
+  if (isAppleMobileDevice()) setText("#readerStatus", "iPhone Reader ready. Your selected voice will now stay selected.");
   saveState();
 }
 
@@ -291,29 +303,42 @@ function speakReader(index) {
   speakSystemReader(index);
 }
 
-function speakSystemReader(index) {
+function speakSystemReader(index, continuation = false, runId = null) {
   if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) { showToast("Speech is not available in this browser."); return; }
   updateReaderChunks();
   if (!readerChunks.length) { showToast("Add text to the Reader first."); return; }
-  stopNeuralAudio(false);
-  window.speechSynthesis.cancel();
+  if (!continuation) {
+    runId = ++systemSpeechRunId;
+    stopNeuralAudio(false);
+    window.speechSynthesis.cancel();
+  }
+  if (runId !== systemSpeechRunId) return;
   readerIndex = Math.max(0, Math.min(index, readerChunks.length - 1));
   state.readerPosition = readerIndex; saveState(); updateReaderChunks();
   activeUtterance = new window.SpeechSynthesisUtterance(readerChunks[readerIndex]);
-  activeUtterance.rate = Number($("#readerRate").value || 0.96);
+  activeUtterance.rate = Number($("#readerRate").value || 0.93);
   activeUtterance.voice = readerVoices.find(voice => voice.name === $("#readerVoice").value) || null;
-  activeUtterance.pitch = /^Samantha/i.test(activeUtterance.voice?.name || "") ? 1.0 : 1.03;
-  activeUtterance.onstart = () => setText("#readerStatus", `Playing section ${readerIndex + 1}.`);
+  activeUtterance.pitch = 1.0;
+  activeUtterance.volume = 1.0;
+  activeUtterance.onstart = () => setText("#readerStatus", `Playing section ${readerIndex + 1} with ${activeUtterance.voice?.name || "the iPhone voice"}.`);
   activeUtterance.onend = () => {
     if (readerIndex < readerChunks.length - 1) {
       readerIndex += 1; state.readerPosition = readerIndex; saveState(); updateReaderChunks();
-      setTimeout(() => speakSystemReader(readerIndex), 35);
+      setTimeout(() => speakSystemReader(readerIndex, true, runId), 110);
     } else {
       $("#readerProgress").value = 100; setText("#readerStatus", "Reading complete."); saveReadingHistory();
     }
   };
-  activeUtterance.onerror = event => { if (event.error !== "canceled" && event.error !== "interrupted") setText("#readerStatus", `Speech error: ${event.error}`); };
-  window.speechSynthesis.speak(activeUtterance);
+  activeUtterance.onerror = event => {
+    if (event.error !== "canceled" && event.error !== "interrupted") {
+      setText("#readerStatus", `Speech stopped at section ${readerIndex + 1}. Tap Play to continue. (${event.error})`);
+    }
+  };
+  const start = () => {
+    if (runId === systemSpeechRunId) window.speechSynthesis.speak(activeUtterance);
+  };
+  if (continuation) start();
+  else setTimeout(start, 120);
 }
 
 async function speakNeuralReader(index) {
@@ -455,6 +480,7 @@ function releaseNeuralAudioUrl() {
 }
 
 function stopReader() {
+  systemSpeechRunId += 1;
   neuralRunId += 1;
   stopNeuralAudio(false);
   window.speechSynthesis?.cancel();
@@ -466,11 +492,16 @@ async function testReaderVoice() {
   stopReader();
   const sample = "Good afternoon. This is the new CP neural reader. The voice should sound clear, warm, and natural, without the crackling system speech.";
   if (state.readerEngine === "system") {
+    const runId = ++systemSpeechRunId;
+    await new Promise(resolve => setTimeout(resolve, 140));
+    if (runId !== systemSpeechRunId) return;
     const utterance = new SpeechSynthesisUtterance(sample);
     utterance.rate = Number($("#readerRate").value || 0.93);
     utterance.voice = readerVoices.find(voice => voice.name === $("#readerVoice").value) || null;
-    setText("#readerStatus", "Playing system voice test.");
-    window.speechSynthesis.speak(utterance);
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    setText("#readerStatus", `Testing ${utterance.voice?.name || "the iPhone voice"}.`);
+    if (runId === systemSpeechRunId) window.speechSynthesis.speak(utterance);
     return;
   }
   const runId = ++neuralRunId;
@@ -498,23 +529,28 @@ async function playNeuralPreview(rawAudio, runId) {
 }
 
 function loadReaderVoices() {
-  readerVoices = window.speechSynthesis?.getVoices().filter(v => /^en/i.test(v.lang)) || [];
+  readerVoices = window.speechSynthesis?.getVoices()
+    .filter(voice => /^en/i.test(voice.lang) && !NOVELTY_VOICE_PATTERN.test(voice.name)) || [];
   if (!readerVoices.length) {
     renderReaderVoiceOptions();
     return;
   }
   const isIPhoneOrIPad = isAppleMobileDevice();
-  const allison = readerVoices.find(voice => /^Allison/i.test(voice.name) && /^en[-_]US/i.test(voice.lang)) || null;
-  const samantha = readerVoices.find(voice => /^Samantha$/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
-    || readerVoices.find(voice => /Samantha/i.test(voice.name) && /^en[-_]US/i.test(voice.lang))
-    || null;
-  const deviceVoice = isIPhoneOrIPad ? (samantha || allison) : (allison || samantha);
-  const settingsAreCurrent = !readerVoiceNeedsDeviceReset && localStorage.getItem("cpCommandCenter.freeReaderBuild") === VERSION;
-  const savedVoice = settingsAreCurrent && state.readerVoice && readerVoices.some(voice => voice.name === state.readerVoice) ? state.readerVoice : "";
+  const preferencePatterns = isIPhoneOrIPad
+    ? [/^Ava/i, /^Zoe/i, /^Serena/i, /^Samantha$/i, /^Samantha/i, /^Allison/i, /^Karen/i, /^Moira/i]
+    : [/^Allison/i, /^Ava/i, /^Samantha$/i, /^Samantha/i, /^Zoe/i, /^Serena/i];
+  const deviceVoice = preferencePatterns
+    .map(pattern => readerVoices.find(voice => pattern.test(voice.name) && /^en[-_]US/i.test(voice.lang))
+      || readerVoices.find(voice => pattern.test(voice.name)))
+    .find(Boolean) || null;
+  const settingsAreCurrent = !readerVoiceNeedsDeviceReset
+    && localStorage.getItem("cpCommandCenter.readerSettingsSchema") === READER_SETTINGS_SCHEMA;
+  const savedVoice = settingsAreCurrent && state.readerVoice
+    && readerVoices.some(voice => voice.name === state.readerVoice) ? state.readerVoice : "";
   const preferred = savedVoice || deviceVoice?.name || readerVoices[0]?.name || "";
   if (preferred) state.readerVoice = preferred;
   readerVoiceNeedsDeviceReset = false;
-  localStorage.setItem("cpCommandCenter.freeReaderBuild", VERSION);
+  localStorage.setItem("cpCommandCenter.readerSettingsSchema", READER_SETTINGS_SCHEMA);
   renderReaderVoiceOptions();
   saveState();
 }
