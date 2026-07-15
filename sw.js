@@ -1,14 +1,14 @@
-const CACHE_NAME = "cp-command-center-7.3.2-neural-reader";
+const CACHE_NAME = "cp-command-center-7.3.3-iphone-reader";
 const APP_SHELL = [
   "./",
-  "./styles-v6.css?v=7.3.2",
-  "./app-core-base-v6.js?v=7.3.2",
-  "./app-core-ui-v6.js?v=7.3.2",
-  "./app-data-v6.js?v=7.3.2",
-  "./app-live-v6.js?v=7.3.2",
+  "./styles-v6.css?v=7.3.3",
+  "./app-core-base-v6.js?v=7.3.3",
+  "./app-core-ui-v6.js?v=7.3.3",
+  "./app-data-v6.js?v=7.3.3",
+  "./app-live-v6.js?v=7.3.3",
   "./cast25-built-in.js?v=2026-07-11-1",
   "./readings/cast25-2026-07-11.txt?v=2026-07-11-1",
-  "./manifest-v6.webmanifest?v=7.3.2",
+  "./manifest-v6.webmanifest?v=7.3.3",
   "./icon-v6.svg"
 ];
 
