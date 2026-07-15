@@ -222,8 +222,3 @@ function bindGeneralForms() {
     saveState();
   }));
 }
-
-
-
-
-
