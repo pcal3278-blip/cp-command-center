@@ -3,7 +3,17 @@
 const VERSION = "7.3.3";
 const BUILD_DATE = "2026-07-15";
 const STORE_KEY = "cpCommandCenter.v6.1";
-const LEGACY_KEYS = ["cpCommandCenter.v5.2", "cpCommandCenter.v5.1", "fuelHistory"];
+const LEGACY_KEYS = [
+  "cpCommandCenter.v5.2",
+  "cpCommandCenter.v5.1",
+  "cpCommandCenter.v6.live",
+  "cpFuelLogV2",
+  "cpFuelLogV2Backup",
+  "cpFuelLogV1",
+  "cp_mpg",
+  "fuelHistory"
+];
+const FUEL_MIGRATION_KEY = "cpCommandCenter.fuelMigration.2026-07-15";
 const VEHICLES = ["2021 Chevy Silverado RST", "2007 Honda Civic"];
 const LOCATIONS = {
   westBabylon: { name: "West Babylon", latitude: 40.7182, longitude: -73.3543 },
@@ -91,22 +101,33 @@ function init() {
 
 function loadAndMigrate() {
   const current = safeJson(localStorage.getItem(STORE_KEY), null);
-  if (current) return normalizeState({ ...defaultState, ...current });
-
   const legacy = safeJson(localStorage.getItem("cpCommandCenter.v5.2"), {});
-  const standaloneFuel = safeJson(localStorage.getItem("fuelHistory"), []);
-  const migrated = {
+  const base = current ? { ...defaultState, ...current } : {
     ...defaultState,
     ...legacy,
-    fuel: normalizeFuel([...(Array.isArray(legacy.fuel) ? legacy.fuel : []), ...(Array.isArray(standaloneFuel) ? standaloneFuel : [])]),
     maintenance: Array.isArray(legacy.home) ? legacy.home.map(item => ({
       id: item.id || uid(), area: item.area || "Home", task: item.task || "Maintenance item", due: item.due || "",
       priority: item.priority || "Medium", notes: item.notes || "", complete: Boolean(item.complete), created: item.created || new Date().toISOString()
     })) : [],
     retirementTarget: legacy.retirementTarget || "2033-05-15"
   };
+  const migrated = normalizeState(base);
+
+  if (localStorage.getItem(FUEL_MIGRATION_KEY) !== "done") {
+    const legacyFuel = LEGACY_KEYS.flatMap(key => legacyFuelItems(safeJson(localStorage.getItem(key), null), key));
+    migrated.fuel = normalizeFuel([...(migrated.fuel || []), ...legacyFuel]);
+    localStorage.setItem(FUEL_MIGRATION_KEY, "done");
+  }
+
   localStorage.setItem(STORE_KEY, JSON.stringify(migrated));
-  return normalizeState(migrated);
+  return migrated;
+}
+
+function legacyFuelItems(raw, sourceKey) {
+  if (Array.isArray(raw)) return raw.map(item => ({ ...item, sourceKey }));
+  if (!raw || typeof raw !== "object") return [];
+  const candidates = ["fuel", "entries", "history", "log", "records", "mpg", "fuelHistory", "fuelLog", "data"];
+  return candidates.flatMap(key => Array.isArray(raw[key]) ? raw[key].map(item => ({ ...item, sourceKey })) : []);
 }
 
 function normalizeState(raw) {
@@ -126,16 +147,35 @@ function normalizeState(raw) {
 function normalizeFuel(items) {
   const seen = new Set();
   return items.map(item => {
-    const vehicle = item.vehicle || VEHICLES[0];
-    const odometer = numberOr(item.odometer, item.currentMileage);
-    const gallons = numberOr(item.gallons, item.gal);
-    let totalPaid = numberOr(item.totalPaid, item.cost);
-    if (!totalPaid && Number(item.price) && gallons) totalPaid = Number(item.price) * gallons;
-    const id = item.id || uid();
-    const key = `${vehicle}|${item.date || ""}|${odometer}|${gallons}|${totalPaid}`;
+    if (!item || typeof item !== "object") return null;
+    let vehicle = item.vehicle || item.car || item.vehicleName || VEHICLES[0];
+    if (/2021 Chevrolet Silverado RST/i.test(vehicle)) vehicle = VEHICLES[0];
+    if (/2007 Honda Civic/i.test(vehicle)) vehicle = VEHICLES[1];
+
+    const odometer = numberOr(item.odometer, item.currentMileage, item.currentOdometer, item.mileage);
+    const gallons = numberOr(item.gallons, item.gal, item.gallonsFilled, item.gallonsAdded);
+    let totalPaid = numberOr(item.totalPaid, item.totalCost, item.cost, item.amountPaid, item.paid);
+    const legacyPriceIsTotal = item.sourceKey === "cpCommandCenter.v6.live" || Number(item.previous) > 0 || Number(item.cpm) > 0;
+    if (!totalPaid && Number(item.price)) totalPaid = legacyPriceIsTotal ? Number(item.price) : Number(item.price) * gallons;
+    if (!totalPaid && Number(item.pricePerGallon)) totalPaid = Number(item.pricePerGallon) * gallons;
+    if (!totalPaid && Number(item.pricePerGal)) totalPaid = Number(item.pricePerGal) * gallons;
+
+    const date = normalizeDate(item.date || item.dateFueled || item.fueledAt || item.created);
+    const previousOdometer = numberOr(item.previousOdometer, item.previous, item.lastMileage);
+    const milesDriven = numberOr(item.milesDriven, item.miles);
+    const id = String(item.id || uid());
+    const key = `${vehicle}|${date}|${odometer}|${gallons}|${totalPaid}`;
     if (seen.has(key)) return null;
     seen.add(key);
-    return { id, vehicle, date: normalizeDate(item.date), odometer, gallons, totalPaid, created: item.created || new Date().toISOString() };
+
+    return {
+      id, vehicle, date, odometer, gallons, totalPaid,
+      previousOdometer: previousOdometer || null,
+      milesDriven: milesDriven || null,
+      station: item.station || item.location || "",
+      notes: item.notes || item.note || "",
+      created: item.created || new Date().toISOString()
+    };
   }).filter(item => item && item.odometer > 0 && item.gallons > 0 && item.totalPaid >= 0);
 }
 
