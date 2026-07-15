@@ -62,23 +62,26 @@ function bindFuel() {
 }
 
 function chronologicalFuel(vehicle) {
-  return state.fuel.filter(entry => entry.vehicle === vehicle).sort((a, b) => a.odometer - b.odometer || String(a.date).localeCompare(String(b.date)));
+  return state.fuel
+    .filter(entry => entry.vehicle === vehicle)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)) || Number(a.odometer || 0) - Number(b.odometer || 0));
 }
 
 function calculatedFuel(vehicle) {
   const rows = chronologicalFuel(vehicle);
   return rows.map((entry, index) => {
-    const previous = rows[index - 1];
+    const odometer = Number(entry.odometer) > 0 ? Number(entry.odometer) : null;
+    const previous = odometer ? rows.slice(0, index).filter(row => Number(row.odometer) > 0).at(-1) : null;
     const savedPrevious = Number(entry.previousOdometer) > 0 ? Number(entry.previousOdometer) : null;
     const previousOdometer = previous?.odometer ?? savedPrevious;
     const savedMiles = Number(entry.milesDriven) > 0 ? Number(entry.milesDriven) : null;
-    const miles = previous ? entry.odometer - previous.odometer : (savedMiles || (previousOdometer ? entry.odometer - previousOdometer : null));
+    const miles = odometer && previous ? odometer - previous.odometer : (savedMiles || (odometer && previousOdometer ? odometer - previousOdometer : null));
     const mpg = miles && miles > 0 ? miles / entry.gallons : null;
     const gallonsPer100Miles = miles && miles > 0 ? entry.gallons / miles * 100 : null;
     const costPerMile = miles && miles > 0 ? entry.totalPaid / miles : null;
     const pricePerGallon = entry.gallons ? entry.totalPaid / entry.gallons : null;
     return { ...entry, previousOdometer, miles, mpg, gallonsPer100Miles, costPerMile, pricePerGallon };
-  }).sort((a, b) => b.odometer - a.odometer);
+  }).sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.odometer || 0) - Number(a.odometer || 0));
 }
 
 function fuelStats(vehicle) {
@@ -118,7 +121,7 @@ function renderFuel() {
     ["Total spent", currency(stats.totalPaid)], ["Fill-ups", String(stats.rows.length)]
   ].map(([label, value]) => statTile(label, value)).join("");
 
-  $("#fuelHistory").innerHTML = stats.rows.length ? `<table class="data-table"><thead><tr><th>Date</th><th>Odometer</th><th>Miles</th><th>Gallons</th><th>Paid</th><th>$/gal</th><th>MPG</th><th>Gal/100 mi</th><th>$/mile</th><th>Actions</th></tr></thead><tbody>${stats.rows.map(row => `<tr><td>${escapeHtml(row.date)}</td><td>${formatNumber(row.odometer,1)}</td><td>${row.miles ? formatNumber(row.miles,1) : "Initial"}</td><td>${formatNumber(row.gallons,3)}</td><td>${currency(row.totalPaid)}</td><td>${currency(row.pricePerGallon,3)}</td><td>${row.mpg ? formatNumber(row.mpg,1) : "--"}</td><td>${row.gallonsPer100Miles ? formatNumber(row.gallonsPer100Miles,2) : "--"}</td><td>${row.costPerMile ? currency(row.costPerMile,3) : "--"}</td><td><div class="row-actions"><button data-fuel-edit="${row.id}" class="secondary">Edit</button><button data-fuel-delete="${row.id}" class="danger">Delete</button></div></td></tr>`).join("")}</tbody></table>` : "<p>No fuel entries for this vehicle.</p>";
+  $("#fuelHistory").innerHTML = stats.rows.length ? `<table class="data-table"><thead><tr><th>Date</th><th>Odometer</th><th>Miles</th><th>Gallons</th><th>Paid</th><th>$/gal</th><th>MPG</th><th>Gal/100 mi</th><th>$/mile</th><th>Actions</th></tr></thead><tbody>${stats.rows.map(row => `<tr><td>${escapeHtml(row.date)}</td><td>${row.odometer ? formatNumber(row.odometer,1) : "Legacy"}</td><td>${row.miles ? formatNumber(row.miles,1) : "Initial"}</td><td>${formatNumber(row.gallons,3)}</td><td>${currency(row.totalPaid)}</td><td>${currency(row.pricePerGallon,3)}</td><td>${row.mpg ? formatNumber(row.mpg,1) : "--"}</td><td>${row.gallonsPer100Miles ? formatNumber(row.gallonsPer100Miles,2) : "--"}</td><td>${row.costPerMile ? currency(row.costPerMile,3) : "--"}</td><td><div class="row-actions"><button data-fuel-edit="${row.id}" class="secondary">Edit</button><button data-fuel-delete="${row.id}" class="danger">Delete</button></div></td></tr>`).join("")}</tbody></table>` : "<p>No fuel entries for this vehicle.</p>";
   $$('[data-fuel-edit]').forEach(button => button.addEventListener("click", () => editFuel(button.dataset.fuelEdit)));
   $$('[data-fuel-delete]').forEach(button => button.addEventListener("click", () => deleteFuel(button.dataset.fuelDelete)));
 }
