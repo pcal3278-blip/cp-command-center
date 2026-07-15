@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "7.3.2";
+const VERSION = "7.3.3";
 const BUILD_DATE = "2026-07-15";
 const STORE_KEY = "cpCommandCenter.v6.1";
 const LEGACY_KEYS = ["cpCommandCenter.v5.2", "cpCommandCenter.v5.1", "fuelHistory"];
@@ -57,8 +57,13 @@ window.addEventListener("beforeinstallprompt", event => {
   installPrompt = event;
   renderInstallStatus();
 });
-window.addEventListener("online", () => { renderNetwork(); refreshExternalData(); });
-window.addEventListener("offline", renderNetwork);
+window.addEventListener("online", () => {
+  if (typeof renderNetwork === "function") renderNetwork();
+  if (typeof refreshExternalData === "function") refreshExternalData();
+});
+window.addEventListener("offline", () => {
+  if (typeof renderNetwork === "function") renderNetwork();
+});
 
 function init() {
   try {
@@ -217,3 +222,8 @@ function bindGeneralForms() {
     saveState();
   }));
 }
+
+
+
+
+
